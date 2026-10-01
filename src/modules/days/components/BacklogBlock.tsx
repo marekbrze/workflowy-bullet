@@ -31,9 +31,9 @@ export function BacklogBlock({ days, remaining, onStart }: BacklogBlockProps) {
         <div className="mt-2 rounded-xl border bg-card p-4">
           <p className="text-sm text-muted-foreground tabular-nums">
             {finished
-              ? 'Everything is processed — finish your session.'
+              ? 'Everything is processed — finish your review.'
               : resuming
-                ? `${remaining} left in your backlog session`
+                ? `${remaining} left in your backlog review`
                 : `${days.length} open ${days.length === 1 ? 'day' : 'days'}`}
           </p>
           <Button
@@ -42,10 +42,10 @@ export function BacklogBlock({ days, remaining, onStart }: BacklogBlockProps) {
             onClick={onStart}
             aria-label={
               finished
-                ? 'Finish backlog session'
+                ? 'Finish backlog review'
                 : resuming
-                  ? 'Continue backlog session'
-                  : 'Start backlog session with the oldest day'
+                  ? 'Continue backlog review'
+                  : 'Start backlog review with the oldest day'
             }
           >
             {finished ? 'Finish' : resuming ? 'Continue' : 'Start with the oldest'}

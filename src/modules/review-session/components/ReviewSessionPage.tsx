@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
-import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
+import { Navigate, useNavigate, useParams } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { ConfirmDialog } from '@/shared/components/ConfirmDialog'
 import { Kbd } from '@/shared/components/Kbd'
+import { TextLink } from '@/shared/components/TextLink'
 import { WriteErrorNotice } from '@/shared/components/WriteErrorNotice'
 import { InvalidKeyNotice } from '@/modules/connection/components/InvalidKeyNotice'
 import { useConnection } from '@/modules/connection/hooks/use-connection'
@@ -19,9 +20,9 @@ import { SessionSummary } from './SessionSummary'
 import { SessionToolbar } from './SessionToolbar'
 
 const MODE_LABELS: Record<ReviewMode, string> = {
-  today: 'Today',
-  yesterday: 'Yesterday review',
-  backlog: 'Backlog',
+  today: "Today's review",
+  yesterday: "Yesterday's review",
+  backlog: 'Backlog review',
 }
 
 export function ReviewSessionPage() {
@@ -46,9 +47,9 @@ function UnknownMode() {
       <p className="mt-2 text-sm text-muted-foreground">
         Start a review from the Today screen instead.
       </p>
-      <Link to="/" className="mt-4 inline-block text-sm underline underline-offset-4">
+      <TextLink to="/" className="mt-4">
         Back to Today
-      </Link>
+      </TextLink>
     </section>
   )
 }
@@ -114,7 +115,7 @@ function ReviewSession({ mode }: { mode: ReviewMode }) {
 
   const header = (
     <div className="mb-4 flex items-center justify-between">
-      <Button variant="ghost" size="sm" onClick={exit}>
+      <Button variant="ghost" size="sm" onClick={exit} aria-keyshortcuts="Escape">
         ← Exit <Kbd>esc</Kbd>
       </Button>
       <span className="text-sm text-muted-foreground">{MODE_LABELS[mode]}</span>
@@ -124,7 +125,7 @@ function ReviewSession({ mode }: { mode: ReviewMode }) {
         disabled={!session}
         onClick={() => setConfirming('end')}
       >
-        End session
+        End review
       </Button>
     </div>
   )
@@ -141,9 +142,9 @@ function ReviewSession({ mode }: { mode: ReviewMode }) {
           <p className="mt-2 text-sm text-muted-foreground">
             There are no entries waiting in this queue.
           </p>
-          <Link to="/" className="mt-4 inline-block text-sm underline underline-offset-4">
+          <TextLink to="/" className="mt-4">
             Back to Today
-          </Link>
+          </TextLink>
         </section>
       </>
     )
@@ -251,9 +252,9 @@ function ReviewSession({ mode }: { mode: ReviewMode }) {
       />
       <ConfirmDialog
         open={confirming === 'end'}
-        title="End this session?"
+        title="End this review?"
         description="Your decisions stay in WorkFlowy, but you won't be able to undo them any more."
-        confirmLabel="End session"
+        confirmLabel="End review"
         onConfirm={() => {
           setConfirming(null)
           review.end()

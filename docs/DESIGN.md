@@ -82,8 +82,8 @@ Light: ink on canvas 14.96 · ink on surface 15.65 · ink-muted on canvas 7.00, 
 **Scale**: fixed `rem`, ratio ≈ 1.2 (product):
 | Step | Size | Use |
 |------|------|-----|
-| xs | 0.75rem | shortcuts (`kbd`), meta |
-| sm | 0.875rem | secondary text, buttons, labels |
+| xs | 0.75rem | keyboard hints (`kbd`) only — decorative, hidden on touch screens |
+| sm | 0.875rem | secondary text, buttons, labels, and any meta that carries information (day, counters, statuses, chips) — never below 14px |
 | base | 1rem | body |
 | lg | 1.2rem | section headings |
 | xl | 1.44rem | page headings |
@@ -114,6 +114,8 @@ Functional only, 150–250 ms, on state changes: the card swapping to the next e
 - Alarm styling for neutral counts: open days and waiting entries are shown in calm text, never red badges.
 
 **Contrast floor**: body ≥ 4.5:1, large text and UI components ≥ 3:1, placeholder text ≥ 4.5:1 (no default muted gray on a tinted near-white).
+**Targets**: 44px tall wherever the pointer is coarse (a base rule), keyboard focus always visible.
+**Words**: the activity is a *review* everywhere in the interface ("Yesterday's review", "End review"); "session" stays a code term (`ReviewSession`).
 
 ## Hand-off to proto-design
 **Token layer**: Tailwind v4 with the shadcn `:root` / `.dark` custom properties in `src/index.css` and the `@theme inline` block. First step: replace the neutral oklch values with the palette above (mapping table), set `--radius: 0.5rem`, swap `@fontsource-variable/geist` for `@fontsource-variable/atkinson-hyperlegible-next` and set `--font-sans`, add `--brand-*` primitives and the success/warning tokens, and a `prefers-reduced-motion` rule.

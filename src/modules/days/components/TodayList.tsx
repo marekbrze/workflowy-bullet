@@ -95,10 +95,10 @@ export function TodayList({
         {canStart && (
           <Button variant="outline" size="sm" onClick={onStart}>
             {finished
-              ? 'Finish today session'
+              ? "Finish today's review"
               : resuming
-                ? 'Continue today session'
-                : 'Start today session'}
+                ? "Continue today's review"
+                : "Start today's review"}
           </Button>
         )}
       </div>
@@ -114,11 +114,11 @@ export function TodayList({
                 typeRow(entry)
               ) : (
                 <span className="flex flex-wrap items-center gap-1">
-                  <span className="text-xs text-muted-foreground">{statusLabel(entry)}</span>
+                  <span className="text-sm text-muted-foreground">{statusLabel(entry)}</span>
                   {entry.type === 'note' && (
                     <>
                       {entry.mirroredTo && (
-                        <span className="text-xs text-muted-foreground">
+                        <span className="text-sm text-muted-foreground">
                           · mirrored to {entry.mirroredTo.name}
                         </span>
                       )}
@@ -156,7 +156,7 @@ export function TodayList({
       )}
 
       {tomorrowCount > 0 && (
-        <p className="mt-2 text-xs text-muted-foreground tabular-nums">
+        <p className="mt-2 text-sm text-muted-foreground tabular-nums">
           {tomorrowCount} {tomorrowCount === 1 ? 'task' : 'tasks'} waiting for tomorrow
         </p>
       )}

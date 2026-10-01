@@ -20,7 +20,7 @@ export function YesterdayCard({ day, remaining, onStart }: YesterdayCardProps) {
         <h2 id="yesterday-heading" className="text-lg font-semibold">
           Yesterday
         </h2>
-        <span className="text-xs text-muted-foreground tabular-nums">{formatFullDate(day.date)}</span>
+        <span className="text-sm text-muted-foreground tabular-nums">{formatFullDate(day.date)}</span>
       </div>
       <p className="mt-1 text-sm text-muted-foreground tabular-nums">
         {finished

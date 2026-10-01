@@ -180,8 +180,8 @@ function PickerBody({
           <p>
             Currently mirrored to <strong>{currentMirror.name}</strong>
           </p>
-          <p className="text-xs text-muted-foreground">{formatPath(currentMirror.path)}</p>
-          <p className="mt-1 text-xs text-muted-foreground">
+          <p className="text-sm text-muted-foreground">{formatPath(currentMirror.path)}</p>
+          <p className="mt-1 text-sm text-muted-foreground">
             Choose another place to move the mirror, or keep it where it is.
           </p>
         </div>
@@ -224,7 +224,7 @@ function PickerBody({
             return (
               <li key={`${row.section}-${destination.id}`} role="presentation">
                 {showHeading && (
-                  <div aria-hidden="true" className="px-2 pb-1 pt-3 text-xs font-medium text-muted-foreground">
+                  <div aria-hidden="true" className="px-2 pb-1 pt-3 text-sm font-medium text-muted-foreground">
                     {row.section}
                   </div>
                 )}
@@ -246,7 +246,7 @@ function PickerBody({
                     <span className="break-words text-sm">
                       <Highlight text={destination.name} query={searching ? deferredQuery : ''} />
                     </span>
-                    <span className="break-words text-xs text-muted-foreground">
+                    <span className="break-words text-sm text-muted-foreground">
                       {missing ? (
                         'No longer in your tree'
                       ) : (
@@ -277,7 +277,7 @@ function PickerBody({
       )}
 
       {hiddenResults > 0 && (
-        <p className="mt-2 text-xs text-muted-foreground">
+        <p className="mt-2 text-sm text-muted-foreground">
           Showing the first {page.results.length} of {page.total} — keep typing to narrow it down.
         </p>
       )}
@@ -316,7 +316,7 @@ function PickerBody({
       {error && onRetry && <WriteErrorNotice onRetry={onRetry} onDismiss={onDismissError} />}
 
       <div className="mt-4 flex items-center justify-between gap-2">
-        <p className="text-xs text-muted-foreground">
+        <p className="text-sm text-muted-foreground">
           {refreshedAt ? `Tree refreshed ${formatAgo(refreshedAt)}` : 'Tree not refreshed yet'}
         </p>
         <div className="flex gap-1">
@@ -330,7 +330,7 @@ function PickerBody({
           </Button>
         </div>
       </div>
-      <p className="mt-2 text-xs text-muted-foreground">
+      <p className="mt-2 text-xs text-muted-foreground [@media(hover:none)]:hidden">
         <Kbd>↑</Kbd>
         <Kbd>↓</Kbd> move <Kbd>enter</Kbd> select <Kbd>shift</Kbd>
         <Kbd>enter</Kbd> pin

@@ -204,6 +204,22 @@ dialog[open]::backdrop {
 }
 
 @layer base {
+  /* Placeholder text must reach 4.5:1 — Tailwind's default (half-transparent ink) does not. */
+  ::placeholder {
+    color: var(--ink-muted);
+    opacity: 1;
+  }
+  /* Touch targets: at least 44px tall wherever the pointer is a finger. */
+  @media (pointer: coarse) {
+    button,
+    summary,
+    nav a {
+      min-height: 2.75rem;
+    }
+    button {
+      min-width: 2.75rem;
+    }
+  }
   * {
     @apply border-border outline-ring/50;
     }

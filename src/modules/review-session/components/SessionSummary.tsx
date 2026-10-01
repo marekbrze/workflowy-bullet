@@ -19,7 +19,7 @@ export function SessionSummary({ processed, canUndo, onUndo, onDone }: SessionSu
   return (
     <section aria-labelledby="summary-heading" className="rounded-xl border bg-card p-6">
       <h1 id="summary-heading" className="text-xl font-semibold">
-        Queue finished
+        Review finished
       </h1>
       <p className="mt-2 text-sm text-muted-foreground">
         {processed} {processed === 1 ? 'entry' : 'entries'} processed.
@@ -28,7 +28,7 @@ export function SessionSummary({ processed, canUndo, onUndo, onDone }: SessionSu
         <Button ref={doneRef} onClick={onDone}>
           Done
         </Button>
-        <Button variant="ghost" onClick={onUndo} disabled={!canUndo}>
+        <Button variant="ghost" onClick={onUndo} disabled={!canUndo} aria-keyshortcuts="k">
           Undo <Kbd>k</Kbd>
         </Button>
       </div>

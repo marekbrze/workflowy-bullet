@@ -11,7 +11,7 @@ interface EntryCardProps {
 
 function Chip({ children }: { children: string }) {
   return (
-    <span className="rounded-full border px-2 py-0.5 text-xs text-muted-foreground">{children}</span>
+    <span className="rounded-full border px-2 py-0.5 text-sm text-muted-foreground">{children}</span>
   )
 }
 
@@ -23,7 +23,7 @@ export function EntryCard({ entry, position, total, today }: EntryCardProps) {
       aria-label="Entry under review"
       className="animate-card-in rounded-xl border bg-card p-6 text-card-foreground"
     >
-      <div className="flex items-center justify-between text-xs text-muted-foreground">
+      <div className="flex items-center justify-between text-sm text-muted-foreground">
         <span>{formatDayLabel(entry.date, today)}</span>
         <span className="tabular-nums">
           {position} of {total}
@@ -34,7 +34,7 @@ export function EntryCard({ entry, position, total, today }: EntryCardProps) {
 
       {entry.children.length > 0 && (
         <details className="mt-4 text-sm">
-          <summary className="cursor-pointer text-muted-foreground">{childLabel}</summary>
+          <summary className="cursor-pointer rounded text-muted-foreground focus-ring">{childLabel}</summary>
           <ul className="mt-2 list-disc space-y-1 pl-5">
             {entry.children.map((child, index) => (
               <li key={index} className="break-words">

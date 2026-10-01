@@ -22,7 +22,7 @@ Terms and concepts specific to this project. Used across all project skills to m
 | zamknięty dzień | `ClosedDay` (derived: `isClosed`) | A day in which every entry has a type and no task is left open. Computed, not stored. | "archived day", "done day" |
 | zaległe dni | `Backlog` | All past days that are not closed. Processed oldest first; their tasks roll straight to today. | "history", "overdue" |
 | dziś | `Today` | The current date's day node — the only target for rolled-over tasks (for now). | — |
-| sesja przetwarzania | `ReviewSession` | A resumable run through a queue of entries, one at a time, in one of three modes (`today`, `yesterday`, `backlog`). Lasts until the user ends it, possibly across many days; its undo history is discarded on end. | "batch", "run" (in UI) |
+| sesja przetwarzania | `ReviewSession` | (Called a "review" in the interface.) A resumable run through a queue of entries, one at a time, in one of three modes (`today`, `yesterday`, `backlog`). Lasts until the user ends it, possibly across many days; its undo history is discarded on end. | "batch", "run" (in UI) |
 | decyzja | `Decision` | One recorded processing step in a session, stored so it can be undone. | "action log" |
 | cofnij | `Undo` | Reverting a decision within the active session, step by step. Not available for Delete. | "rollback" |
 | usuń wpis | `Delete` | Permanently removing an entry that should never have existed (junk, duplicate). Confirmed, not undoable. Distinct from `Irrelevant`. | "irrelevant", "archive" |

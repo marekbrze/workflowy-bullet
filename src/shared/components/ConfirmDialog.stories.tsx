@@ -21,8 +21,8 @@ export const DeleteEntry: Story = {
 
 export const EndSession: Story = {
   args: {
-    title: 'End this session?',
+    title: 'End this review?',
     description: "Your decisions stay in WorkFlowy, but you won't be able to undo them any more.",
-    confirmLabel: 'End session',
+    confirmLabel: 'End review',
   },
 }

@@ -112,7 +112,7 @@ export function ConnectionSettings({ connection, onDisconnected }: ConnectionSet
 
       {import.meta.env.DEV && !invalid && (
         <div className="rounded-xl border border-dashed p-4">
-          <p className="text-xs text-muted-foreground">Prototype only</p>
+          <p className="text-sm text-muted-foreground">Prototype only</p>
           <Button className="mt-2" variant="outline" size="sm" onClick={connection.markInvalid}>
             Simulate: WorkFlowy rejects the key
           </Button>
@@ -122,7 +122,7 @@ export function ConnectionSettings({ connection, onDisconnected }: ConnectionSet
       <ConfirmDialog
         open={pendingKey !== null}
         title="Switch to a different account?"
-        description="This key belongs to a different WorkFlowy account. Your local entries, unfinished sessions and pinned and recent places belong to the old one, so they will be cleared."
+        description="This key belongs to a different WorkFlowy account. Your local entries, unfinished reviews and pinned and recent places belong to the old one, so they will be cleared."
         confirmLabel={switching ? 'Switching…' : 'Switch and clear local data'}
         destructive
         onConfirm={switchAccount}
@@ -132,7 +132,7 @@ export function ConnectionSettings({ connection, onDisconnected }: ConnectionSet
       <ConfirmDialog
         open={confirmingDisconnect}
         title="Disconnect WorkFlowy?"
-        description="Your API key and the downloaded tree will be removed from this browser. Your entries, unfinished sessions and pinned and recent places stay here for when you reconnect."
+        description="Your API key and the downloaded tree will be removed from this browser. Your entries, unfinished reviews and pinned and recent places stay here for when you reconnect."
         confirmLabel="Disconnect"
         destructive
         onConfirm={() => {
@@ -150,7 +150,7 @@ export function ConnectionSettings({ connection, onDisconnected }: ConnectionSet
             onChange={(event) => setRemoveLocalData(event.target.checked)}
             className="mt-0.5 accent-primary"
           />
-          <span>Also remove my local data (entries, sessions, pinned and recent places)</span>
+          <span>Also remove my local data (entries, reviews, pinned and recent places)</span>
         </label>
       </ConfirmDialog>
     </section>

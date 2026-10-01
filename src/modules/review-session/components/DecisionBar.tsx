@@ -51,7 +51,7 @@ export function DecisionBar({
 
   return (
     <section aria-labelledby="decision-heading" className="mt-4">
-      <h2 id="decision-heading" className="mb-2 text-sm text-muted-foreground">
+      <h2 id="decision-heading" className="mb-2 text-base font-medium">
         {heading ?? (step === 'classify' ? 'What is this?' : 'What happens to this task?')}
       </h2>
       <div className="flex flex-wrap gap-2">
@@ -63,6 +63,7 @@ export function DecisionBar({
             className="h-11 px-4 text-base"
             onClick={option.onSelect}
             disabled={disabled}
+            aria-keyshortcuts={option.key}
           >
             {option.label}
             <Kbd>{option.key}</Kbd>

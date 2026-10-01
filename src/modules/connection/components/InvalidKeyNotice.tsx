@@ -18,8 +18,8 @@ export function InvalidKeyNotice({ onChangeKey, interruptedSession }: InvalidKey
       </h1>
       <p className="mt-2 text-sm text-muted-foreground">
         {interruptedSession
-          ? 'Your session is paused and nothing was lost. Enter a working key to carry on where you stopped.'
-          : 'Your data and any unfinished session are kept. Enter a working key to carry on.'}
+          ? 'Your review is paused and nothing was lost. Enter a working key to carry on where you stopped.'
+          : 'Your data and any unfinished review are kept. Enter a working key to carry on.'}
       </p>
       <Button className="mt-4" onClick={onChangeKey}>
         Change key
