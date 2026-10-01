@@ -80,6 +80,7 @@ export function ConnectForm({
         <Button
           type="button"
           variant="outline"
+          size="lg"
           aria-pressed={revealed}
           onClick={() => setRevealed((value) => !value)}
         >
@@ -97,17 +98,17 @@ export function ConnectForm({
         </p>
       )}
       <div className="mt-4 flex gap-2">
-        <Button type="submit" disabled={busy}>
+        <Button type="submit" size="lg" disabled={busy}>
           {submitLabel}
         </Button>
         {/* While connecting, Cancel stops the attempt; the previous connection stays untouched. */}
         {busy ? (
-          <Button type="button" variant="ghost" onClick={() => abortRef.current?.abort()}>
+          <Button type="button" variant="ghost" size="lg" onClick={() => abortRef.current?.abort()}>
             Cancel
           </Button>
         ) : (
           onCancel && (
-            <Button type="button" variant="ghost" onClick={onCancel}>
+            <Button type="button" variant="ghost" size="lg" onClick={onCancel}>
               Cancel
             </Button>
           )

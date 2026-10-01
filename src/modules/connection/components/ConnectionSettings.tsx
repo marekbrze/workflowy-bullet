@@ -48,17 +48,20 @@ export function ConnectionSettings({ connection, onDisconnected }: ConnectionSet
         Connection
       </h1>
 
-      <div className="rounded-xl border p-4">
+      <div className="rounded-xl border bg-card p-6">
         <p className="text-sm">
           <span className="text-muted-foreground">Status: </span>
-          {invalid
-            ? 'Key not accepted'
-            : `Connected to WorkFlowy${connection.connectedAt ? ` · ${formatAgo(connection.connectedAt)}` : ''}`}
+          {/* Meaning is in the words; the color only reinforces it. */}
+          <span className={invalid ? 'font-medium text-destructive' : 'font-medium text-success'}>
+            {invalid
+              ? 'Key not accepted'
+              : `Connected to WorkFlowy${connection.connectedAt ? ` · ${formatAgo(connection.connectedAt)}` : ''}`}
+          </span>
         </p>
         {connection.apiKey && (
           <p className="mt-1 text-sm">
             <span className="text-muted-foreground">API key: </span>
-            <code>{maskKey(connection.apiKey)}</code>
+            <code className="font-sans tabular-nums">{maskKey(connection.apiKey)}</code>
           </p>
         )}
 
@@ -145,7 +148,7 @@ export function ConnectionSettings({ connection, onDisconnected }: ConnectionSet
             type="checkbox"
             checked={removeLocalData}
             onChange={(event) => setRemoveLocalData(event.target.checked)}
-            className="mt-0.5"
+            className="mt-0.5 accent-primary"
           />
           <span>Also remove my local data (entries, sessions, pinned and recent places)</span>
         </label>
