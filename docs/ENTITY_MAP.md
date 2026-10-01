@@ -85,7 +85,7 @@ erDiagram
 **Belongs to**: WorkFlowy tree
 
 ### SavedDestination
-**Description**: A remembered destination for quick access, so the user doesn't have to search every time. Two kinds: `recent` (automatic, last few used) and `pinned` (favorites the user pins/unpins).
+**Description**: A remembered destination for quick access, so the user doesn't have to search every time. Two kinds: `recent` (automatic, last 5 used; pinned ones don't count toward the limit) and `pinned` (favorites the user pins/unpins).
 **Instances per user**: Many (a short recent list + any number of pinned)
 **Ownership**: User (local)
 **Lifecycle**: Recent entries are added on use and fall off as newer ones arrive; pinned ones live until unpinned.
