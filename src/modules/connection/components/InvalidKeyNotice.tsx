@@ -13,10 +13,10 @@ export function InvalidKeyNotice({ onChangeKey, interruptedSession }: InvalidKey
       aria-labelledby="invalid-key-heading"
       className="rounded-xl border border-destructive/40 bg-destructive/10 p-6"
     >
-      <h1 id="invalid-key-heading" className="text-lg font-semibold">
+      <h1 id="invalid-key-heading" className="text-xl font-semibold">
         WorkFlowy no longer accepts this key
       </h1>
-      <p className="mt-2 text-sm text-muted-foreground">
+      <p className="mt-2 text-sm text-foreground">
         {interruptedSession
           ? 'Your review is paused and nothing was lost. Enter a working key to carry on where you stopped.'
           : 'Your data and any unfinished review are kept. Enter a working key to carry on.'}

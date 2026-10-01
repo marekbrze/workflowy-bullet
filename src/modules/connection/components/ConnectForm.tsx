@@ -74,6 +74,7 @@ export function ConnectForm({
           value={apiKey}
           onChange={(event) => setApiKey(event.target.value)}
           disabled={busy}
+          aria-required="true"
           aria-invalid={shownError ? true : undefined}
           aria-describedby={shownError ? `${fieldId}-error` : undefined}
           className="flex-1"
@@ -82,7 +83,7 @@ export function ConnectForm({
           type="button"
           variant="outline"
           size="lg"
-          aria-pressed={revealed}
+          aria-controls={fieldId}
           onClick={() => setRevealed((value) => !value)}
         >
           {revealed ? 'Hide' : 'Show'}

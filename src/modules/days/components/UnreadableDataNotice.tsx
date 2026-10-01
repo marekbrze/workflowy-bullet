@@ -12,10 +12,10 @@ export function UnreadableDataNotice({ onStartFresh }: UnreadableDataNoticeProps
       aria-labelledby="unreadable-heading"
       className="rounded-xl border border-destructive/40 bg-destructive/10 p-6"
     >
-      <h1 id="unreadable-heading" className="text-lg font-semibold">
+      <h1 id="unreadable-heading" className="text-xl font-semibold">
         Your saved entries couldn&rsquo;t be read
       </h1>
-      <p className="mt-2 text-sm text-muted-foreground">
+      <p className="mt-2 text-sm text-foreground">
         The data stored in this browser looks damaged. A copy of it was kept, so nothing has been
         deleted. You can start with a clean slate now.
       </p>

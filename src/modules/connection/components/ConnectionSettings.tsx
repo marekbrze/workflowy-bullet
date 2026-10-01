@@ -106,7 +106,7 @@ export function ConnectionSettings({ connection, onDisconnected }: ConnectionSet
       </div>
 
       <div>
-        <h2 className="mb-1 text-sm font-medium">Tree snapshot</h2>
+        <h2 className="mb-2 text-lg font-semibold">Tree snapshot</h2>
         <SnapshotStatus />
       </div>
 

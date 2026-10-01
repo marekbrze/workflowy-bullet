@@ -16,7 +16,7 @@ export function WriteErrorNotice({ onRetry, onDismiss }: WriteErrorNoticeProps) 
   return (
     <div role="alert" className="mt-4 rounded-xl border border-destructive/40 bg-destructive/10 p-4">
       <p className="text-sm font-medium">That didn&rsquo;t reach WorkFlowy.</p>
-      <p className="mt-1 text-sm text-muted-foreground">
+      <p className="mt-1 text-sm text-foreground">
         Nothing was changed. Check your connection and try again.
       </p>
       <div className="mt-3 flex gap-2">
