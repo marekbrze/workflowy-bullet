@@ -1,0 +1,13 @@
+.git
+.github
+node_modules
+dist
+storybook-static
+coverage
+.vscode
+.idea
+.env
+.env.*
+*.log
+.DS_Store
+docs

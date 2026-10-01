@@ -26,6 +26,8 @@ export interface Decision {
   toType?: EntryType
   /** Roll-over copy created by the decision */
   createdEntryId?: string
+  /** The mirror created by `mirror` (needed to remove it on undo) */
+  mirrorItemId?: string
   at: string
 }
 

@@ -79,7 +79,7 @@ function ReviewSession({ mode }: { mode: ReviewMode }) {
   const step = currentEntry ? getStep(currentEntry) : null
   const queueLength = review.queue.length
   const overlayOpen = confirming !== null || step === 'note'
-  const locked = error !== null
+  const locked = error !== null || review.pending
   // Correcting a type is offered while the entry is on its task step.
   const canChangeType = step === 'task'
   const showClassify = step === 'classify' || (canChangeType && retyping)
@@ -224,12 +224,14 @@ function ReviewSession({ mode }: { mode: ReviewMode }) {
         <WriteErrorNotice
           onRetry={review.retry}
           onDismiss={review.canDismissError ? review.dismissError : undefined}
+          detail={review.errorDetail}
         />
       )}
 
       <DestinationPicker
         open={step === 'note' && confirming === null}
         onPick={review.decideNote}
+        busy={review.pending}
         currentMirror={currentEntry?.mirroredTo}
         excludeIds={currentEntry ? [currentEntry.id] : undefined}
         onBack={review.canGoBack ? review.undo : undefined}

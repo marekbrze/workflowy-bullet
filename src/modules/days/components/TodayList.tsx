@@ -12,9 +12,11 @@ interface TodayListProps {
   remaining: number | null
   /** Open tasks that were rolled over to tomorrow */
   tomorrowCount?: number
-  /** Return `false` when the change could not be saved */
-  onQuickType: (id: string, type: EntryType) => boolean | void
-  onFileNote: (id: string, destination: Destination) => boolean
+  /** Resolves to `false` when the change could not be saved */
+  onQuickType: (id: string, type: EntryType) => boolean | void | Promise<boolean | void>
+  onFileNote: (id: string, destination: Destination) => boolean | Promise<boolean>
+  /** The entry whose change is on its way to WorkFlowy: its row waits */
+  busyId?: string | null
   onStart: () => void
 }
 
@@ -47,6 +49,7 @@ export function TodayList({
   tomorrowCount = 0,
   onQuickType,
   onFileNote,
+  busyId = null,
   onStart,
 }: TodayListProps) {
   const [retypingId, setRetypingId] = useState<string | null>(null)
@@ -78,8 +81,9 @@ export function TodayList({
             aria-label={`${label}: ${entry.text}`}
             id={`type-${entry.id}-${type}`}
             aria-pressed={retyping ? entry.type === type : undefined}
-            onClick={() => {
-              if (onQuickType(entry.id, type) === false) return
+            disabled={busyId !== null}
+            onClick={async () => {
+              if ((await onQuickType(entry.id, type)) === false) return
               setRetypingId(null)
               setFocusId(`change-${entry.id}`)
             }}
@@ -186,13 +190,14 @@ export function TodayList({
         open={filing !== null}
         currentMirror={filing?.mirroredTo}
         excludeIds={filing ? [filing.id] : undefined}
-        onPick={(destination) => {
+        busy={busyId !== null}
+        onPick={async (destination) => {
           if (!filing) return
           if (destination === null) {
             setFilingId(null)
             return
           }
-          const ok = onFileNote(filing.id, destination)
+          const ok = await onFileNote(filing.id, destination)
           if (ok) setFilingId(null)
           return ok
         }}

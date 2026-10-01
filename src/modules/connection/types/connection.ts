@@ -6,6 +6,11 @@ export interface ConnectionRecord {
   apiKey: string
   status: 'connected' | 'invalid'
   connectedAt: string
+  /**
+   * `live` talks to WorkFlowy; `demo` (development scenarios) works on local sample data and
+   * never writes anywhere. Records saved before this field existed are demo data.
+   */
+  mode?: 'live' | 'demo'
   /** Which WorkFlowy account the key belongs to; `undefined` for records saved before this was tracked */
   accountId?: string
 }

@@ -1,7 +1,7 @@
 # 0022 - Deploy to GitHub Pages
 
 **Date**: 2026-10-01
-**Status**: Accepted
+**Status**: Superseded by 0023
 
 ## Context
 The prototype is functionally complete, hardened, designed and polished. We need a public, shareable URL, and all user data stays local in the browser.

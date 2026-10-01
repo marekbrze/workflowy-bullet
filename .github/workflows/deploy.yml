@@ -1,48 +1,47 @@
-name: Deploy to GitHub Pages
+name: Deploy workflowy-bullet
 
 on:
   push:
     branches: [main]
   workflow_dispatch:
 
-permissions:
-  contents: read
-  pages: write
-  id-token: write
-
-concurrency:
-  group: pages
-  cancel-in-progress: true
+env:
+  SCW_REGISTRY: rg.pl-waw.scw.cloud/marekbrze
+  IMAGE_NAME: img-workflowy-bullet
+  # Must match the CapRover app name exactly.
+  CAPROVER_APP: workflowy-bullet
 
 jobs:
-  build:
+  build-and-deploy:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v5
 
-      - uses: actions/setup-node@v4
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Scaleway Container Registry
+        uses: docker/login-action@v3
         with:
-          node-version: 20
-          cache: npm
+          registry: ${{ env.SCW_REGISTRY }}
+          username: nologin
+          password: ${{ secrets.SCALEWAY_SECRET_KEY }}
 
-      - run: npm ci
-      - run: npm run build
-
-      # SPA refresh support: GitHub Pages returns 404 on deep-link refresh.
-      # Copy index.html → 404.html so client-side routes resolve.
-      - run: cp dist/index.html dist/404.html
-
-      - uses: actions/configure-pages@v5
-      - uses: actions/upload-pages-artifact@v3
+      - name: Build and push image
+        uses: docker/build-push-action@v6
         with:
-          path: ./dist
+          context: .
+          push: true
+          tags: ${{ env.SCW_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          progress: plain
 
-  deploy:
-    needs: build
-    runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - id: deployment
-        uses: actions/deploy-pages@v5
+      - name: Deploy to CapRover
+        uses: caprover/deploy-from-github@v1.1.2
+        with:
+          server: ${{ secrets.CAPROVER_SERVER }}
+          app: ${{ env.CAPROVER_APP }}
+          token: ${{ secrets.CAPROVER_APP_TOKEN }}
+          image: ${{ env.SCW_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}

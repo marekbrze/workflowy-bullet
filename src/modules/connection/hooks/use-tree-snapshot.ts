@@ -1,9 +1,12 @@
+import { useEffect, useSyncExternalStore } from 'react'
 import { useLocalStorage } from '@/shared/hooks/use-local-storage'
 import type { Destination } from '@/modules/note-filing/types/destination'
-import type { ConnectionStatus } from '../types/connection'
+import { ensureSnapshotLoaded, getSnapshotState, subscribeSnapshot } from '../lib/snapshot-state'
+import { REFRESH_LIMIT_SECONDS, refreshLive, type RefreshResult } from '../lib/refresh'
+import type { ConnectionRecord, ConnectionStatus } from '../types/connection'
 
-/** WorkFlowy allows one `/nodes-export` request per minute. */
-export const REFRESH_LIMIT_SECONDS = 60
+export { REFRESH_LIMIT_SECONDS }
+export type { RefreshResult }
 
 /** After this long the snapshot is flagged as possibly out of date — and refreshed on its own. */
 export const STALE_AFTER_MINUTES = 60
@@ -26,14 +29,9 @@ interface SnapshotMeta {
   refreshedAt: string
 }
 
-export type RefreshResult =
-  | { ok: true }
-  | { ok: false; reason: 'rate-limit'; retryInSeconds: number }
-  | { ok: false; reason: 'network' }
-
 const SIMULATE_REFRESH_FAILURE_KEY = '__simulate_refresh_failure__'
 
-// Dev-only: set this key to "1" in the console to make the next refresh fail once.
+// Dev-only: set this key to "1" in the console to make the next demo refresh fail once.
 function maybeSimulateRefreshFailure(): boolean {
   if (!import.meta.env.DEV) return false
   if (window.localStorage.getItem(SIMULATE_REFRESH_FAILURE_KEY) !== '1') return false
@@ -41,14 +39,27 @@ function maybeSimulateRefreshFailure(): boolean {
   return true
 }
 
-// Mocked: the "tree" is a list of nodes in LocalStorage.
+/**
+ * The downloaded tree and its freshness. With a live connection it comes from the snapshot kept in
+ * IndexedDB; in demo mode (development scenarios) it is the sample data in LocalStorage.
+ */
 export function useTreeSnapshot() {
-  const [nodes] = useLocalStorage<Destination[]>('tree-nodes', [])
-  // Stored as a one-element array so scenarios (which seed arrays) can provide it.
-  const [meta, setMeta] = useLocalStorage<SnapshotMeta[]>('tree-snapshot', [])
-  const refreshedAt = meta[0]?.refreshedAt ?? null
+  const state = useSyncExternalStore(subscribeSnapshot, getSnapshotState)
+  const [records] = useLocalStorage<ConnectionRecord[]>('connection', [], { reportFailure: false })
+  const live = records[0]?.mode === 'live'
 
-  const refresh = (): RefreshResult => {
+  const [demoNodes] = useLocalStorage<Destination[]>('tree-nodes', [])
+  // Stored as a one-element array so scenarios (which seed arrays) can provide it.
+  const [demoMeta, setDemoMeta] = useLocalStorage<SnapshotMeta[]>('tree-snapshot', [])
+
+  useEffect(() => {
+    if (live) void ensureSnapshotLoaded()
+  }, [live])
+
+  const refreshedAt = live ? state.refreshedAt : (demoMeta[0]?.refreshedAt ?? null)
+
+  const refresh = async (): Promise<RefreshResult> => {
+    if (live) return refreshLive()
     if (refreshedAt) {
       const elapsed = (Date.now() - new Date(refreshedAt).getTime()) / 1000
       if (elapsed < REFRESH_LIMIT_SECONDS) {
@@ -59,11 +70,17 @@ export function useTreeSnapshot() {
         }
       }
     }
-    // The previous snapshot stays untouched when the request fails.
     if (maybeSimulateRefreshFailure()) return { ok: false, reason: 'network' }
-    setMeta([{ refreshedAt: new Date().toISOString() }])
+    setDemoMeta([{ refreshedAt: new Date().toISOString() }])
     return { ok: true }
   }
 
-  return { nodes, refreshedAt, refresh }
+  return {
+    nodes: live ? state.destinations : demoNodes,
+    refreshedAt,
+    /** The tree is still being read from storage */
+    loading: live && state.status !== 'ready',
+    refreshing: live && state.refreshing,
+    refresh,
+  }
 }

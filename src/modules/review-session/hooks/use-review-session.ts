@@ -3,6 +3,7 @@ import { useLocalStorage } from '@/shared/hooks/use-local-storage'
 import { generateId } from '@/shared/types'
 import { useToday } from '@/shared/hooks/use-today'
 import { AuthError, reportAuthFailure } from '@/modules/connection/lib/auth'
+import { CopyTooLargeError, getBackend, type Backend } from '@/modules/connection/lib/backend'
 import type { Destination } from '@/modules/note-filing/types/destination'
 import type { Entry, EntryType } from '../types/entry'
 import type { ReviewMode, ReviewSession } from '../types/session'
@@ -15,6 +16,7 @@ import {
   decideTask,
   deleteEntry,
   describeNextUndo,
+  lastUndoableDecision,
   newEntryIds,
   reconcileQueue,
   skip,
@@ -23,6 +25,14 @@ import {
   type SessionState,
   type TaskDecision,
 } from '../lib/session-logic'
+import {
+  remoteClassify,
+  remoteDelete,
+  remoteNote,
+  remoteTask,
+  remoteUndo,
+  type RemoteResult,
+} from '../lib/remote'
 
 const SIMULATE_FAILURE_KEY = '__simulate_write_failure__'
 const SAVE_FAILED = "Couldn't save to this browser."
@@ -38,7 +48,11 @@ function maybeSimulateWriteFailure() {
   throw new Error('Simulated WorkFlowy write failure')
 }
 
-type Transition = (state: SessionState) => SessionState
+/** What to do in WorkFlowy, and how the session state changes once that has happened. */
+interface Action {
+  remote: ((backend: Backend) => Promise<RemoteResult | void>) | null
+  apply: (state: SessionState, result: RemoteResult) => SessionState
+}
 
 export function useReviewSession(mode: ReviewMode) {
   // This hook shows its own error state, so the app-wide storage banner is switched off.
@@ -47,9 +61,19 @@ export function useReviewSession(mode: ReviewMode) {
     reportFailure: false,
   })
   const [error, setError] = useState<string | null>(null)
+  const [errorDetail, setErrorDetail] = useState<string | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
+  const [pending, setPending] = useState(false)
+  const pendingRef = useRef(false)
   const retryAction = useRef<(() => void) | null>(null)
   const today = useToday()
+
+  // The freshest stored state. A decision awaits WorkFlowy; the tree can be refreshed meanwhile,
+  // and the decision must be applied to what is stored *then*, not to what it saw when it began.
+  const latest = useRef({ entries, sessions })
+  useEffect(() => {
+    latest.current = { entries, sessions }
+  })
 
   // An ended session is removed, so any stored session is active.
   const session = sessions.find((s) => s.mode === mode) ?? null
@@ -82,48 +106,76 @@ export function useReviewSession(mode: ReviewMode) {
     }
   }
 
-  const run = (transition: Transition): boolean => {
-    if (!session) return false
-    const previousEntries = entries
-    try {
-      maybeSimulateWriteFailure()
-      const next = transition({ entries, queue, decisions: session.decisions })
-      // A decision touches two keys. If the second write fails, put the first one back.
-      if (!setEntries(next.entries)) throw new Error(SAVE_FAILED)
-      const saved = setSessions(
-        sessions.map((s) =>
-          s.id === session.id
-            ? { ...s, queue: next.queue, decisions: next.decisions, updatedAt: new Date().toISOString() }
-            : s,
-        ),
-      )
-      if (!saved) {
-        setEntries(previousEntries)
-        throw new Error(SAVE_FAILED)
-      }
-      retryAction.current = null
-      setError(null)
-      setNotice(null)
-      return true
-    } catch (e) {
-      if (e instanceof AuthError) {
-        // The key stopped working: hand over to the invalid-key flow. The session stays stored.
+  const act = async (action: Action): Promise<boolean> => {
+    if (!session || pendingRef.current) return false
+    pendingRef.current = true
+    setPending(true)
+    // Kept across retries: if WorkFlowy accepted the change but saving here failed, a retry must
+    // not do it twice (a second roll-over would make a second copy).
+    let remoteResult: RemoteResult | undefined
+
+    const attempt = async (): Promise<boolean> => {
+      try {
+        maybeSimulateWriteFailure()
+        if (remoteResult === undefined) {
+          remoteResult = (action.remote ? await action.remote(getBackend()) : undefined) ?? {}
+        }
+        const fresh = latest.current
+        const freshSession = fresh.sessions.find((s) => s.id === session.id)
+        if (!freshSession) return false
+        const next = action.apply(
+          {
+            entries: fresh.entries,
+            queue: reconcileQueue(fresh.entries, freshSession.queue),
+            decisions: freshSession.decisions,
+          },
+          remoteResult,
+        )
+        // A decision touches two keys. If the second write fails, put the first one back.
+        if (!setEntries(next.entries)) throw new Error(SAVE_FAILED)
+        const saved = setSessions(
+          fresh.sessions.map((s) =>
+            s.id === session.id
+              ? { ...s, queue: next.queue, decisions: next.decisions, updatedAt: new Date().toISOString() }
+              : s,
+          ),
+        )
+        if (!saved) {
+          setEntries(fresh.entries)
+          throw new Error(SAVE_FAILED)
+        }
         retryAction.current = null
         setError(null)
-        reportAuthFailure()
+        setErrorDetail(null)
+        setNotice(null)
+        return true
+      } catch (e) {
+        if (e instanceof AuthError) {
+          // The key stopped working: hand over to the invalid-key flow. The session stays stored.
+          retryAction.current = null
+          setError(null)
+          reportAuthFailure()
+          return false
+        }
+        retryAction.current = () => {
+          if (pendingRef.current) return
+          pendingRef.current = true
+          setPending(true)
+          void attempt().then(finish)
+        }
+        setError(e instanceof Error ? e.message : 'Unknown error')
+        // Most failures read the same ("it didn't reach WorkFlowy"); a few have their own advice.
+        setErrorDetail(e instanceof CopyTooLargeError ? e.message : null)
         return false
       }
-      retryAction.current = () => runRef.current(transition)
-      setError(e instanceof Error ? e.message : 'Unknown error')
-      return false
     }
+    const finish = (ok: boolean) => {
+      pendingRef.current = false
+      setPending(false)
+      return ok
+    }
+    return attempt().then(finish)
   }
-
-  // Retrying must use the latest render's state, not the one captured when it failed.
-  const runRef = useRef(run)
-  useEffect(() => {
-    runRef.current = run
-  })
 
   /** On resume: queue entries that entered the session's scope since it started. */
   const addNewEntries = () => {
@@ -158,7 +210,11 @@ export function useReviewSession(mode: ReviewMode) {
     currentEntry,
     candidateCount: candidateQueue.length,
     error,
+    /** Extra advice for the error, when the generic message does not fit */
+    errorDetail,
     notice,
+    /** A decision is being sent to WorkFlowy */
+    pending,
     canDismissError: session !== null,
     canUndo: session ? canUndo(session.decisions) : false,
     /** The note picker can step back to the classification of the current entry */
@@ -166,26 +222,59 @@ export function useReviewSession(mode: ReviewMode) {
     undoLabel: session ? describeNextUndo(session.decisions) : null,
     start,
     addNewEntries,
-    classify: (type: EntryType) => (currentId ? run((s) => classify(s, currentId, type, now())) : false),
-    decideTask: (kind: TaskDecision) =>
-      currentId ? run((s) => decideTask(s, currentId, kind, mode, today, now())) : false,
-    decideNote: (destination: Destination | null) =>
-      currentId ? run((s) => decideNote(s, currentId, destination, now())) : false,
-    deleteCurrent: () => (currentId ? run((s) => deleteEntry(s, currentId, now())) : false),
-    skip: () => run(skip),
+    classify: (type: EntryType) => {
+      const entry = currentEntry
+      if (!entry) return Promise.resolve(false)
+      return act({
+        remote: (backend) => remoteClassify(backend, entry, type),
+        apply: (s) => classify(s, entry.id, type, now()),
+      })
+    },
+    decideTask: (kind: TaskDecision) => {
+      const entry = currentEntry
+      if (!entry) return Promise.resolve(false)
+      return act({
+        remote: (backend) => remoteTask(backend, entry, kind, mode, today),
+        apply: (s, result) => decideTask(s, entry.id, kind, mode, today, now(), result.copyId),
+      })
+    },
+    decideNote: (destination: Destination | null) => {
+      const entry = currentEntry
+      if (!entry) return Promise.resolve(false)
+      return act({
+        remote: (backend) => remoteNote(backend, entry, destination),
+        apply: (s, result) => decideNote(s, entry.id, destination, now(), result.mirrorItemId),
+      })
+    },
+    deleteCurrent: () => {
+      const entry = currentEntry
+      if (!entry) return Promise.resolve(false)
+      return act({
+        remote: (backend) => remoteDelete(backend, entry),
+        apply: (s) => deleteEntry(s, entry.id, now()),
+      })
+    },
+    skip: () => act({ remote: null, apply: (s) => skip(s) }),
     undo: () => {
-      if (!session) return false
+      if (!session) return Promise.resolve(false)
       const reason = undoBlockedReason({ entries, queue, decisions: session.decisions })
       if (reason) {
         setNotice(reason)
-        return false
+        return Promise.resolve(false)
       }
-      return run(undo)
+      const decision = lastUndoableDecision(session.decisions)
+      if (!decision) return Promise.resolve(false)
+      return act({
+        remote: (backend) => remoteUndo(backend, decision),
+        apply: (s) => undo(s),
+      })
     },
     retry: () => retryAction.current?.(),
     dismissError: () => {
       retryAction.current = null
+      pendingRef.current = false
       setError(null)
+      setErrorDetail(null)
     },
     /** Ends the session; its decision history is discarded. */
     end: () => setSessions(sessions.filter((s) => s.mode !== mode)),

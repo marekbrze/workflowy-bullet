@@ -3,6 +3,7 @@ import { generateId } from '@/shared/types'
 import type { Destination } from '@/modules/note-filing/types/destination'
 import type { Entry, EntryType } from '../types/entry'
 import type { Decision, DecisionKind, ReviewMode, ReviewSession } from '../types/session'
+import { addTag, setTypeTag } from './tags'
 
 export interface SessionState {
   entries: Entry[]
@@ -84,6 +85,12 @@ export function canGoBackToClassify(decisions: Decision[], entryId: string): boo
   return last.kind === 'classify' && last.entryId === entryId
 }
 
+/** The decision Undo would revert, or `null`. */
+export function lastUndoableDecision(decisions: Decision[]): Decision | null {
+  const index = lastUndoableIndex(decisions)
+  return index === -1 ? null : decisions[index]
+}
+
 export function canUndo(decisions: Decision[]): boolean {
   return lastUndoableIndex(decisions) !== -1
 }
@@ -150,7 +157,9 @@ function decision(
  */
 export function typeEntry(entry: Entry, type: EntryType, now: string): Entry {
   const outcome = type === 'task' ? (entry.completed === true ? 'done' : 'open') : null
-  return { ...entry, type, outcome, updatedAt: now }
+  // The type lives in the bullet's text as a tag; keep the local copy of the name in step.
+  const name = entry.name === undefined ? undefined : setTypeTag(entry.name, type)
+  return { ...entry, name, type, outcome, updatedAt: now }
 }
 
 /** Sets the type of an entry — the first classification, or a correction (Change type). */
@@ -179,22 +188,25 @@ export function decideTask(
   mode: ReviewMode,
   today: string,
   now: string,
+  /** The id WorkFlowy gave the rolled-over copy (a local id is made up for demo data) */
+  copyId?: string,
 ): SessionState {
   const before = findEntry(state.entries, entryId)
   let entries = state.entries
   let createdEntryId: string | undefined
+  const withTag = (tag: string) => (before.name === undefined ? undefined : addTag(before.name, tag))
 
   if (kind === 'done') {
     entries = patchEntry(entries, entryId, { outcome: 'done', completed: true }, now)
   }
   if (kind === 'irrelevant') {
-    entries = patchEntry(entries, entryId, { outcome: 'irrelevant', completed: true }, now)
+    entries = patchEntry(entries, entryId, { outcome: 'irrelevant', completed: true, name: withTag('irrelevant') }, now)
   }
   if (kind === 'roll-over') {
     // The original stays in its day as history; an independent copy goes to the target day.
     const copy: Entry = {
       ...before,
-      id: generateId(),
+      id: copyId ?? generateId(),
       date: rollOverTarget(mode, today),
       type: 'task',
       outcome: 'open',
@@ -205,7 +217,7 @@ export function decideTask(
     }
     createdEntryId = copy.id
     entries = [
-      ...patchEntry(entries, entryId, { outcome: 'migrated', completed: true }, now),
+      ...patchEntry(entries, entryId, { outcome: 'migrated', completed: true, name: withTag('migrated') }, now),
       copy,
     ]
   }
@@ -227,16 +239,18 @@ export function decideNote(
   entryId: string,
   destination: Destination | null,
   now: string,
+  /** The mirror WorkFlowy created, kept so it can be moved or undone */
+  mirrorItemId?: string,
 ): SessionState {
   const before = findEntry(state.entries, entryId)
   return {
     entries: destination
-      ? patchEntry(state.entries, entryId, { mirroredTo: destination }, now)
+      ? patchEntry(state.entries, entryId, { mirroredTo: destination, mirrorItemId }, now)
       : state.entries,
     queue: without(state.queue, entryId),
     decisions: [
       ...state.decisions,
-      decision(destination ? 'mirror' : 'keep-in-day', before, now),
+      decision(destination ? 'mirror' : 'keep-in-day', before, now, { mirrorItemId }),
     ],
   }
 }

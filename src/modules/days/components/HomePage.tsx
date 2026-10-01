@@ -1,4 +1,5 @@
 import { useNavigate } from 'react-router-dom'
+import { Button } from '@/components/ui/button'
 import { ConnectScreen } from '@/modules/connection/components/ConnectScreen'
 import { SAVED_CONNECTION_UNREADABLE } from '@/modules/connection/components/ConnectionPage'
 import { InvalidKeyNotice } from '@/modules/connection/components/InvalidKeyNotice'
@@ -53,6 +54,15 @@ export function HomePage() {
         </p>
       )}
 
+      {days.error && (
+        <div role="alert" className="flex items-center justify-between gap-3 rounded-xl border border-destructive/40 bg-destructive/10 p-4">
+          <p className="text-sm text-foreground">{days.error}</p>
+          <Button variant="ghost" size="sm" onClick={days.clearError}>
+            Dismiss
+          </Button>
+        </div>
+      )}
+
       <YesterdayCard
         day={days.yesterdayStatus}
         remaining={days.remaining('yesterday')}
@@ -65,6 +75,7 @@ export function HomePage() {
         tomorrowCount={days.tomorrowCount}
         onQuickType={days.quickType}
         onFileNote={days.fileNote}
+        busyId={days.busyId}
         onStart={() => start('today')}
       />
       <BacklogBlock

@@ -25,7 +25,9 @@ interface DestinationPickerProps {
    * Return `false` when saving the choice failed, so the destination is not remembered as
    * "recent" and the picker can stay open.
    */
-  onPick: (destination: Destination | null) => boolean | void
+  onPick: (destination: Destination | null) => boolean | void | Promise<boolean | void>
+  /** A choice is being saved: the list waits */
+  busy?: boolean
   /** The note's existing mirror, if any — a note has at most one, so picking a place moves it */
   currentMirror?: Destination | null
   /** Never offered as a destination, e.g. the note being filed */
@@ -42,7 +44,7 @@ type PickerBodyProps = Omit<DestinationPickerProps, 'open'>
 
 export function DestinationPicker({ open, ...body }: DestinationPickerProps) {
   return (
-    <ModalDialog open={open} title="Where should this note live?" onCancel={() => body.onPick(null)}>
+    <ModalDialog open={open} title="Where should this note live?" onCancel={() => void body.onPick(null)}>
       {/* Mounted only while open, so the query and selection reset every time. */}
       <PickerBody {...body} />
     </ModalDialog>
@@ -77,6 +79,7 @@ const MISSING_NOTE = 'That place is no longer in your tree. Unpin it, or choose 
 
 function PickerBody({
   onPick,
+  busy,
   currentMirror,
   excludeIds,
   onBack,
@@ -86,7 +89,7 @@ function PickerBody({
 }: PickerBodyProps) {
   const listId = useId()
   const optionId = (index: number) => `${listId}-option-${index}`
-  const { nodes, refreshedAt, refresh, rateLimited, message: refreshMessage } = useRefreshControl()
+  const { nodes, refreshedAt, refresh, rateLimited, message: refreshMessage, loading } = useRefreshControl()
   const saved = useSavedDestinations()
   const [query, setQuery] = useState('')
   const [active, setActive] = useState(0)
@@ -123,17 +126,18 @@ function PickerBody({
     document.getElementById(optionId(activeIndex))?.scrollIntoView({ block: 'nearest' })
   }, [activeIndex, rows.length])
 
-  const pick = (row: Row) => {
+  const pick = async (row: Row) => {
+    if (busy) return
     if (row.missing) {
       setNote(MISSING_NOTE)
       return
     }
     // Choosing the place the note is already mirrored to changes nothing.
     if (currentMirror && row.destination.id === currentMirror.id) {
-      onPick(null)
+      void onPick(null)
       return
     }
-    const ok = onPick(row.destination)
+    const ok = await onPick(row.destination)
     if (ok !== false) saved.markUsed(row.destination)
   }
 
@@ -157,7 +161,7 @@ function PickerBody({
       saved.togglePin(rows[activeIndex].destination)
     } else if (event.key === 'Enter') {
       event.preventDefault()
-      pick(rows[activeIndex])
+      void pick(rows[activeIndex])
     }
   }
 
@@ -210,7 +214,7 @@ function PickerBody({
         className="mt-3"
       />
       <p className="sr-only" aria-live="polite">
-        {liveCount}
+        {busy ? 'Saving…' : liveCount}
       </p>
 
       {rows.length > 0 && (
@@ -238,7 +242,7 @@ function PickerBody({
                     aria-selected={rowIndex === activeIndex}
                     aria-disabled={missing || undefined}
                     tabIndex={-1}
-                    onClick={() => pick(row)}
+                    onClick={() => void pick(row)}
                     title={fullPath}
                     className={`flex min-w-0 flex-1 flex-col items-start rounded-lg px-2 py-1.5 text-left outline-none ${missing ? 'text-muted-foreground' : ''}`}
                   >
@@ -282,7 +286,13 @@ function PickerBody({
         </p>
       )}
 
-      {rows.length === 0 && nodes.length === 0 && (
+      {loading && nodes.length === 0 && (
+        <p role="status" className="mt-3 text-sm text-muted-foreground">
+          Reading your WorkFlowy tree…
+        </p>
+      )}
+
+      {rows.length === 0 && nodes.length === 0 && !loading && (
         <div role="status" className="mt-3 rounded-lg border p-3 text-sm">
           <p>Your WorkFlowy tree is empty or hasn&rsquo;t been downloaded yet.</p>
           {refreshButton}
@@ -313,6 +323,12 @@ function PickerBody({
         </p>
       )}
 
+      {busy && (
+        <p role="status" className="mt-2 text-sm text-muted-foreground">
+          Saving to WorkFlowy…
+        </p>
+      )}
+
       {error && onRetry && <WriteErrorNotice onRetry={onRetry} onDismiss={onDismissError} />}
 
       <div className="mt-4 flex items-center justify-between gap-2">
@@ -325,7 +341,7 @@ function PickerBody({
               Back
             </Button>
           )}
-          <Button variant="ghost" onClick={() => onPick(null)}>
+          <Button variant="ghost" onClick={() => void onPick(null)} disabled={busy}>
             {currentMirror ? 'Keep as is' : 'Keep in day'} <Kbd>esc</Kbd>
           </Button>
         </div>

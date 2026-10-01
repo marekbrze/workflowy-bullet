@@ -9,8 +9,7 @@
     "lint": "eslint src",
     "preview": "vite preview",
     "storybook": "storybook dev -p 6006",
-    "build-storybook": "storybook build",
-    "deploy:manual": "npm run build && gh-pages -d dist"
+    "build-storybook": "storybook build"
   },
   "devDependencies": {
     "@chromatic-com/storybook": "^5.2.1",
@@ -28,7 +27,6 @@
     "@vitest/coverage-v8": "^4.1.8",
     "eslint": "^9.39.0",
     "eslint-plugin-jsx-a11y": "^6.10.2",
-    "gh-pages": "^6.3.0",
     "playwright": "^1.60.0",
     "storybook": "^10.4.2",
     "tailwindcss": "^4.3.0",

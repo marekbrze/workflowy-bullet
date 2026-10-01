@@ -40,8 +40,11 @@ export function fileNote(
   id: string,
   destination: Destination,
   now: string,
+  mirrorItemId?: string,
 ): Entry[] {
-  return entries.map((e) => (e.id === id ? { ...e, mirroredTo: destination, updatedAt: now } : e))
+  return entries.map((e) =>
+    e.id === id ? { ...e, mirroredTo: destination, mirrorItemId, updatedAt: now } : e,
+  )
 }
 
 /** Open tasks that were rolled over to tomorrow. */

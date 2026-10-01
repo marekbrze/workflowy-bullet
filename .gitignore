@@ -35,3 +35,6 @@ storybook-static
 # local secrets — never commit
 .env
 .env.*
+
+# TypeScript incremental build cache
+*.tsbuildinfo
