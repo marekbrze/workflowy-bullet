@@ -76,6 +76,14 @@ function lastUndoableIndex(decisions: Decision[]): number {
   return -1
 }
 
+/** The picker's Back: the last undoable step was classifying this very entry. */
+export function canGoBackToClassify(decisions: Decision[], entryId: string): boolean {
+  const index = lastUndoableIndex(decisions)
+  if (index === -1) return false
+  const last = decisions[index]
+  return last.kind === 'classify' && last.entryId === entryId
+}
+
 export function canUndo(decisions: Decision[]): boolean {
   return lastUndoableIndex(decisions) !== -1
 }
@@ -203,7 +211,11 @@ export function decideTask(
   }
 }
 
-/** `destination === null` keeps the note in its day. */
+/**
+ * `destination === null` keeps the note as it is — in its day, and with its existing mirror if
+ * it has one. A destination mirrors the note there; a note has at most one mirror, so an
+ * existing one is replaced (moved).
+ */
 export function decideNote(
   state: SessionState,
   entryId: string,
@@ -212,7 +224,9 @@ export function decideNote(
 ): SessionState {
   const before = findEntry(state.entries, entryId)
   return {
-    entries: patchEntry(state.entries, entryId, { mirroredTo: destination }, now),
+    entries: destination
+      ? patchEntry(state.entries, entryId, { mirroredTo: destination }, now)
+      : state.entries,
     queue: without(state.queue, entryId),
     decisions: [
       ...state.decisions,

@@ -84,7 +84,7 @@ Complete list of actions users can perform, organized by entity.
 
 | Action | Description | Role | Notes |
 |--------|------------|------|-------|
-| Pin destination | Add a destination to favorites | Owner | |
+| Pin destination | Add a destination to favorites | Owner | Star, or Shift+Enter on the highlighted row |
 | Unpin destination | Remove a destination from favorites | Owner | |
 
 ### Decision

@@ -7,6 +7,7 @@ import type { Entry, EntryType } from '../types/entry'
 import type { ReviewMode, ReviewSession } from '../types/session'
 import {
   buildQueue,
+  canGoBackToClassify,
   canUndo,
   classify,
   decideNote,
@@ -149,6 +150,8 @@ export function useReviewSession(mode: ReviewMode) {
     notice,
     canDismissError: session !== null,
     canUndo: session ? canUndo(session.decisions) : false,
+    /** The note picker can step back to the classification of the current entry */
+    canGoBack: session && currentId ? canGoBackToClassify(session.decisions, currentId) : false,
     undoLabel: session ? describeNextUndo(session.decisions) : null,
     start,
     addNewEntries,

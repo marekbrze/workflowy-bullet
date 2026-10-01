@@ -228,6 +228,9 @@ function ReviewSession({ mode }: { mode: ReviewMode }) {
       <DestinationPicker
         open={step === 'note' && confirming === null}
         onPick={review.decideNote}
+        currentMirror={currentEntry?.mirroredTo}
+        excludeIds={currentEntry ? [currentEntry.id] : undefined}
+        onBack={review.canGoBack ? review.undo : undefined}
         error={error !== null}
         onRetry={review.retry}
         onDismissError={review.canDismissError ? review.dismissError : undefined}

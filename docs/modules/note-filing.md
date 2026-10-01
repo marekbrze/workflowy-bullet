@@ -32,7 +32,7 @@ The note itself always stays in its day; filing only adds a mirror under the cho
 ## Screens (rough)
 
 - **Destination picker**: opens over the entry card. Search field on top (focused). Below it: with an empty field, a **Pinned** list and a **Recent** list; with text, search results. Each row: name, path, child count, star. A "Keep in day" action is always available. Footer shows the keys (arrows, Enter, Esc).
-- **No-results state**: message, "Refresh tree" and "Keep in day".
+- **No-results state**: message, "Refresh tree" (which waits and counts down while WorkFlowy's one-per-minute limit holds) and "Keep in day".
 - **Write error state**: the picker stays open with a plain message and "Try again"; no mirror is considered created until the write succeeds.
 
 ## Actions
@@ -42,7 +42,7 @@ The note itself always stays in its day; filing only adds a mirror under the cho
 | Search destination | Find a node by text in the tree snapshot | Destination | Starts as soon as the user types |
 | Pick pinned destination | Choose from favorites | SavedDestination | Shown when the search field is empty |
 | Pick recent destination | Choose from the last 5 used | SavedDestination | Max 5; pinned are not counted |
-| Pin destination | Star a destination | SavedDestination | Star on any row |
+| Pin destination | Star a destination | SavedDestination | Star on any row, or Shift+Enter on the highlighted row. Pinned places are listed alphabetically |
 | Unpin destination | Remove the star | SavedDestination | Star on any row |
 | Mirror to destination | Create the mirror under the chosen node | NoteMirror | Selecting a place is the confirmation; max one mirror per note |
 | Keep in day | Skip mirroring | Entry | Esc or explicit action |
@@ -53,8 +53,12 @@ The note itself always stays in its day; filing only adds a mirror under the cho
 - **Stale snapshot**: a destination may no longer exist in WorkFlowy; if the write fails the picker shows the error and stays open.
 - **Refresh blocked by the rate limit**: the message states when a refresh is possible again.
 - **Same node name in many places**: the path in each row is what tells them apart.
-- **Note already has a mirror**: at most one mirror per note — to be examined in `proto-edgecases` (e.g. on undo/redo of the decision).
-- **Pinned destination deleted in WorkFlowy**: the pinned row may point to nothing — to be examined in `proto-edgecases`.
+- **Note already has a mirror**: the picker shows "Currently mirrored to X". Choosing another place moves the mirror (a note has at most one); "Keep as is" leaves it; choosing the same place changes nothing. Undo restores the previous mirror.
+- **Pinned or recent destination deleted in WorkFlowy**: saved places are checked against the current tree. A missing one is shown as "No longer in your tree", cannot be picked, and can be unpinned.
+- **The note itself** is never offered as a destination.
+- **Back out of the picker**: "Back" (or Backspace on an empty field) undoes the classification and returns to the untyped card. Esc still means Keep in day.
+- **More results than shown**: the list says "Showing the first 8 of N — keep typing to narrow it down".
+- **Empty or not-yet-downloaded tree**: a distinct message with a Refresh action.
 - **Empty pinned and recent lists** (first use): the picker shows only the search field and a short hint.
 
 ## Integration Points
