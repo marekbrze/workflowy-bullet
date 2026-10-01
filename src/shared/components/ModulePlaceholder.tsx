@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 
 interface ModulePlaceholderProps {
@@ -5,10 +6,11 @@ interface ModulePlaceholderProps {
   title: string
   /** Shown in focus mode, where the top bar is hidden */
   exitTo?: string
+  children?: ReactNode
 }
 
 // Temporary route content — proto-lofi replaces it with the module's real screens.
-export function ModulePlaceholder({ module, title, exitTo }: ModulePlaceholderProps) {
+export function ModulePlaceholder({ module, title, exitTo, children }: ModulePlaceholderProps) {
   return (
     <section aria-labelledby="placeholder-title">
       <h1 id="placeholder-title" className="text-xl font-semibold">
@@ -17,6 +19,7 @@ export function ModulePlaceholder({ module, title, exitTo }: ModulePlaceholderPr
       <p className="mt-2 text-sm text-muted-foreground">
         Placeholder for the <code>{module}</code> module.
       </p>
+      {children}
       {exitTo && (
         <Link to={exitTo} className="mt-4 inline-block text-sm underline underline-offset-4">
           Exit

@@ -1,1 +1,1 @@
-export {}
+export { ReviewSessionPage } from './components/ReviewSessionPage'
