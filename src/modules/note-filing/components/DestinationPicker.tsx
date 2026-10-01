@@ -229,7 +229,7 @@ function PickerBody({
                   </div>
                 )}
                 <div
-                  className={`flex items-center gap-1 rounded-lg ${rowIndex === activeIndex ? 'bg-muted' : ''}`}
+                  className={`flex items-center gap-1 rounded-lg ${rowIndex === activeIndex ? 'bg-accent' : ''}`}
                 >
                   <button
                     type="button"
@@ -240,7 +240,7 @@ function PickerBody({
                     tabIndex={-1}
                     onClick={() => pick(row)}
                     title={fullPath}
-                    className={`flex min-w-0 flex-1 flex-col items-start rounded-lg px-2 py-1.5 text-left outline-none ${missing ? 'opacity-60' : ''}`}
+                    className={`flex min-w-0 flex-1 flex-col items-start rounded-lg px-2 py-1.5 text-left outline-none ${missing ? 'text-muted-foreground' : ''}`}
                   >
                     <span className="sr-only">{row.section}: </span>
                     <span className="break-words text-sm">
@@ -265,7 +265,7 @@ function PickerBody({
                     aria-pressed={pinned}
                     aria-label={`${pinned ? 'Unpin' : 'Pin'} ${destination.name}`}
                     onClick={() => saved.togglePin(destination)}
-                    className="rounded-md px-2 py-1 text-base text-muted-foreground hover:bg-muted focus-ring"
+                    className={`rounded-md px-2 py-1 text-base hover:bg-muted focus-ring ${pinned ? 'text-primary' : 'text-muted-foreground'}`}
                   >
                     {pinned ? '★' : '☆'}
                   </button>
