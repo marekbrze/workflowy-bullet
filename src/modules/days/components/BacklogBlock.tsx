@@ -34,7 +34,7 @@ export function BacklogBlock({ days, remaining, onStart }: BacklogBlockProps) {
               ? 'Everything is processed — finish your review.'
               : resuming
                 ? `${remaining} left in your backlog review`
-                : `${days.length} open ${days.length === 1 ? 'day' : 'days'}`}
+                : `${days.length} open ${days.length === 1 ? 'day' : 'days'}, oldest first`}
           </p>
           <Button
             className="mt-3"
@@ -45,14 +45,14 @@ export function BacklogBlock({ days, remaining, onStart }: BacklogBlockProps) {
                 ? 'Finish backlog review'
                 : resuming
                   ? 'Continue backlog review'
-                  : 'Start backlog review with the oldest day'
+                  : undefined
             }
           >
-            {finished ? 'Finish' : resuming ? 'Continue' : 'Start with the oldest'}
+            {finished ? 'Finish' : resuming ? 'Continue' : 'Start backlog review'}
           </Button>
           {days.length > 0 && (
             <details className="mt-3 text-sm">
-              <summary className="cursor-pointer text-muted-foreground">Show all open days</summary>
+              <summary className="cursor-pointer rounded text-muted-foreground focus-ring">Show all open days</summary>
               <ul className="mt-2 divide-y">
                 {shown.map((day) => (
                   <li key={day.date} className="flex justify-between gap-2 py-1.5">

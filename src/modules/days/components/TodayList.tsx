@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { DestinationPicker } from '@/modules/note-filing/components/DestinationPicker'
 import type { Destination } from '@/modules/note-filing/types/destination'
@@ -52,6 +52,13 @@ export function TodayList({
   const [retypingId, setRetypingId] = useState<string | null>(null)
   const [filingId, setFilingId] = useState<string | null>(null)
   const [showAll, setShowAll] = useState(false)
+  // When a row changes shape the pressed button disappears; focus follows the user to the next control.
+  const [focusId, setFocusId] = useState<string | null>(null)
+  useEffect(() => {
+    if (focusId === null) return
+    document.getElementById(focusId)?.focus()
+    setFocusId(null)
+  }, [focusId, entries])
 
   const resuming = remaining !== null
   const finished = resuming && remaining === 0
@@ -69,16 +76,26 @@ export function TodayList({
             variant="outline"
             size="xs"
             aria-label={`${label}: ${entry.text}`}
+            id={`type-${entry.id}-${type}`}
             aria-pressed={retyping ? entry.type === type : undefined}
             onClick={() => {
-              if (onQuickType(entry.id, type) !== false) setRetypingId(null)
+              if (onQuickType(entry.id, type) === false) return
+              setRetypingId(null)
+              setFocusId(`change-${entry.id}`)
             }}
           >
             {label}
           </Button>
         ))}
         {retyping && (
-          <Button variant="ghost" size="xs" onClick={() => setRetypingId(null)}>
+          <Button
+            variant="ghost"
+            size="xs"
+            onClick={() => {
+              setRetypingId(null)
+              setFocusId(`change-${entry.id}`)
+            }}
+          >
             Cancel
           </Button>
         )}
@@ -136,8 +153,12 @@ export function TodayList({
                     <Button
                       variant="ghost"
                       size="xs"
+                      id={`change-${entry.id}`}
                       aria-label={`Change type: ${entry.text}`}
-                      onClick={() => setRetypingId(entry.id)}
+                      onClick={() => {
+                        setRetypingId(entry.id)
+                        setFocusId(`type-${entry.id}-${entry.type}`)
+                      }}
                     >
                       Change
                     </Button>
