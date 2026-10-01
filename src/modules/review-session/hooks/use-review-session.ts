@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useLocalStorage } from '@/shared/hooks/use-local-storage'
 import { generateId } from '@/shared/types'
 import { useToday } from '@/shared/hooks/use-today'
+import { AuthError, reportAuthFailure } from '@/modules/connection/lib/auth'
 import type { Destination } from '@/modules/note-filing/types/destination'
 import type { Entry, EntryType } from '../types/entry'
 import type { ReviewMode, ReviewSession } from '../types/session'
@@ -26,11 +27,14 @@ import {
 const SIMULATE_FAILURE_KEY = '__simulate_write_failure__'
 const SAVE_FAILED = "Couldn't save to this browser."
 
-// Dev-only: set this key to "1" in the console to make the next write fail once.
+// Dev-only: set this key to "1" in the console to make the next write fail once,
+// or to "auth" to make WorkFlowy answer "unauthorized".
 function maybeSimulateWriteFailure() {
   if (!import.meta.env.DEV) return
-  if (window.localStorage.getItem(SIMULATE_FAILURE_KEY) !== '1') return
+  const mode = window.localStorage.getItem(SIMULATE_FAILURE_KEY)
+  if (mode !== '1' && mode !== 'auth') return
   window.localStorage.removeItem(SIMULATE_FAILURE_KEY)
+  if (mode === 'auth') throw new AuthError()
   throw new Error('Simulated WorkFlowy write failure')
 }
 
@@ -102,6 +106,13 @@ export function useReviewSession(mode: ReviewMode) {
       setNotice(null)
       return true
     } catch (e) {
+      if (e instanceof AuthError) {
+        // The key stopped working: hand over to the invalid-key flow. The session stays stored.
+        retryAction.current = null
+        setError(null)
+        reportAuthFailure()
+        return false
+      }
       retryAction.current = () => runRef.current(transition)
       setError(e instanceof Error ? e.message : 'Unknown error')
       return false

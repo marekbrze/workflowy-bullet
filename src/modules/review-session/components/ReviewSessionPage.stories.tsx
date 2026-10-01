@@ -1,13 +1,14 @@
 import type { Meta, StoryObj } from '@storybook/react'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { buildConnection } from '@/modules/connection/mock/connection'
+import { removeStored, writeStorage } from '@/shared/lib/storage'
 import { buildFullEntries } from '../mock/entries'
 import { ReviewSessionPage } from './ReviewSessionPage'
 
 function seed(entries: unknown[]) {
-  window.localStorage.setItem('entries', JSON.stringify(entries))
-  window.localStorage.setItem('connection', JSON.stringify(buildConnection()))
-  window.localStorage.removeItem('review-sessions')
+  writeStorage('entries', entries)
+  writeStorage('connection', buildConnection())
+  removeStored('review-sessions')
 }
 
 const meta: Meta<typeof ReviewSessionPage> = {

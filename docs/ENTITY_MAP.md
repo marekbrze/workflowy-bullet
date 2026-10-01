@@ -126,7 +126,7 @@ erDiagram
 **Belongs to**: Connection
 
 ### Connection
-**Description**: The link to the user's WorkFlowy account — the API key, stored locally.
+**Description**: The link to the user's WorkFlowy account — the API key and which account it belongs to, stored locally. All app data in the browser is stored under namespaced keys (`wfb:`) because GitHub Pages sites of one account share an origin.
 **Instances per user**: One
 **Ownership**: User (local)
 **Lifecycle**: Set up on first use; can be changed or removed.

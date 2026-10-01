@@ -27,7 +27,7 @@ Plumbing that stays out of the way. The user connects WorkFlowy once, with one s
 
 ### Disconnect
 1. User chooses "Disconnect" → a confirmation explains what will be removed.
-2. On confirm, the API key and the tree snapshot are deleted. Active sessions and saved destinations (pinned / recent) stay stored locally so they are available again after reconnecting.
+2. On confirm, the API key and the tree snapshot are deleted. Entries, active sessions and saved destinations (pinned / recent) stay stored locally so they are available again after reconnecting — unless the user ticks "Also remove my local data", which removes those too.
 3. The app returns to the first-connection screen.
 
 ## Screens (rough)
@@ -54,8 +54,15 @@ Plumbing that stays out of the way. The user connects WorkFlowy once, with one s
 - **Rate limit hit on manual refresh**: button disabled with the time until the next allowed refresh.
 - **Very large tree**: the first download can take a while — the connect flow needs a clear "downloading" state (details in `proto-edgecases`).
 - **Key becomes invalid mid-session**: the session is interrupted, not ended; it resumes after the key is fixed.
-- **Reconnecting with a different WorkFlowy account**: kept sessions and saved destinations may point to nodes that do not exist — to be examined in `proto-edgecases`.
-- **Local storage unavailable**: the key cannot be stored — to be examined in `proto-edgecases`.
+- **Reconnecting with a different WorkFlowy account**: the key's account is remembered. A key from another account asks for confirmation ("Switch to a different account?"); only after the new connection is saved are the old account's entries, sessions and saved places cleared.
+- **Local storage unavailable or full**: the connection is saved all-or-nothing, key last; if any write fails everything is rolled back and the user is told "Couldn't save your connection in this browser" — never "connected" with nothing stored.
+- **Saved connection unreadable**: the connect screen says so; the damaged value is not deleted silently.
+- **A key that stops working**: any module that gets "unauthorized" from WorkFlowy marks the connection invalid, which leads to the invalid-key notice; the session stays stored.
+- **Refresh fails** (network): the current snapshot is kept and the status line says so. While the rate limit holds, Refresh is disabled with a live countdown.
+- **Automatic refresh**: when the app opens or the tab regains focus and the snapshot is over an hour old, it refreshes quietly.
+- **Pasted key**: whitespace, surrounding quotes and a "Bearer " prefix are stripped; an empty field is rejected immediately; the key can be shown to check it.
+- **Cancel while connecting**: stops the attempt and leaves the previous connection untouched.
+- **Shared origin (GitHub Pages)**: every stored key is prefixed `wfb:` so the app does not collide with other sites of the same account; data saved under the old names moves over once.
 
 ## Integration Points
 

@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react'
 import { userEvent, within } from 'storybook/test'
+import { writeStorage } from '@/shared/lib/storage'
 import { MOCK_TREE, buildSavedDestinations, buildSnapshotMeta } from '../mock/tree'
 import type { Destination } from '../types/destination'
 import type { SavedDestination } from '../types/saved-destination'
@@ -12,7 +13,7 @@ interface Seed {
 }
 
 function seed({ tree = MOCK_TREE, saved = [], refreshedMinutesAgo = 12 }: Seed) {
-  const set = (key: string, value: unknown) => window.localStorage.setItem(key, JSON.stringify(value))
+  const set = writeStorage
   set('tree-nodes', tree)
   set('tree-snapshot', tree.length ? buildSnapshotMeta(refreshedMinutesAgo) : [])
   set('saved-destinations', saved)

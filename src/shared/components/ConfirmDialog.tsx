@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react'
 import { Button } from '@/components/ui/button'
 import { ModalDialog } from './ModalDialog'
 
@@ -7,6 +8,8 @@ interface ConfirmDialogProps {
   description: string
   confirmLabel: string
   destructive?: boolean
+  /** Extra content under the description, e.g. an option */
+  children?: ReactNode
   onConfirm: () => void
   onCancel: () => void
 }
@@ -17,12 +20,14 @@ export function ConfirmDialog({
   description,
   confirmLabel,
   destructive,
+  children,
   onConfirm,
   onCancel,
 }: ConfirmDialogProps) {
   return (
     <ModalDialog open={open} title={title} onCancel={onCancel}>
       <p className="mt-2 text-sm text-muted-foreground">{description}</p>
+      {children}
       <div className="mt-5 flex justify-end gap-2">
         {/* Cancel comes first so it receives the initial focus — the safe default. */}
         <Button variant="outline" onClick={onCancel}>

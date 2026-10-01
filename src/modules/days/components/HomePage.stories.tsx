@@ -7,6 +7,7 @@ import { buildFullEntries, buildMinimalEntries } from '@/modules/review-session/
 import type { Entry } from '@/modules/review-session/types/entry'
 import type { ReviewMode } from '@/modules/review-session/types/session'
 import { addDays, todayISO } from '@/shared/dates'
+import { storageKey, writeStorage } from '@/shared/lib/storage'
 import { HomePage } from './HomePage'
 
 interface SeedOptions {
@@ -18,10 +19,10 @@ interface SeedOptions {
 }
 
 function seed(entries: Entry[], { sessionMode, snapshotMinutesAgo = 12, rawEntries }: SeedOptions = {}) {
-  const set = (key: string, value: unknown) => window.localStorage.setItem(key, JSON.stringify(value))
-  if (rawEntries !== undefined) window.localStorage.setItem('entries', rawEntries)
+  const set = writeStorage
+  if (rawEntries !== undefined) window.localStorage.setItem(storageKey('entries'), rawEntries)
   else set('entries', entries)
-  window.localStorage.removeItem('entries.backup')
+  window.localStorage.removeItem(`${storageKey('entries')}.backup`)
   set('connection', buildConnection())
   set('tree-nodes', MOCK_TREE)
   set('tree-snapshot', buildSnapshotMeta(snapshotMinutesAgo))

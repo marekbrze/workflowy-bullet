@@ -1,5 +1,12 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
-import { readStorage, reportStorageFailure, writeStorage } from '@/shared/lib/storage';
+import {
+  readStorage,
+  removeStored,
+  reportStorageFailure,
+  STORAGE_CHANGED,
+  storageKey,
+  writeStorage,
+} from '@/shared/lib/storage';
 
 interface Options {
   /**
@@ -17,16 +24,26 @@ export function useLocalStorage<T>(key: string, initialValue: T, options: Option
   const [storedValue, setStoredValue] = useState<T>(first.value);
   const [unreadable, setUnreadable] = useState(first.unreadable);
 
-  // Another tab changed this key: pick up its value instead of overwriting it later.
+  // Someone else changed this key — another tab, or another hook in this tab: pick up its value
+  // instead of overwriting it later with a stale copy.
   useEffect(() => {
-    const onStorage = (event: StorageEvent) => {
-      if (event.key !== key) return;
+    const reload = () => {
       const next = readStorage<T>(key, initial.current);
       setStoredValue(next.value);
       setUnreadable(next.unreadable);
     };
+    const onStorage = (event: StorageEvent) => {
+      if (event.key === storageKey(key)) reload();
+    };
+    const onChanged = (event: Event) => {
+      if ((event as CustomEvent<{ key: string }>).detail?.key === key) reload();
+    };
     window.addEventListener('storage', onStorage);
-    return () => window.removeEventListener('storage', onStorage);
+    window.addEventListener(STORAGE_CHANGED, onChanged);
+    return () => {
+      window.removeEventListener('storage', onStorage);
+      window.removeEventListener(STORAGE_CHANGED, onChanged);
+    };
   }, [key]);
 
   /** Returns `false` (and leaves the state untouched) when the write did not reach storage. */
@@ -46,21 +63,16 @@ export function useLocalStorage<T>(key: string, initialValue: T, options: Option
   );
 
   const removeValue = useCallback(() => {
-    try {
-      window.localStorage.removeItem(key);
-      setStoredValue(initial.current);
-    } catch (error) {
-      console.error(`Error removing localStorage key "${key}":`, error);
+    if (!removeStored(key)) {
+      console.error(`Error removing localStorage key "${key}"`);
+      return;
     }
+    setStoredValue(initial.current);
   }, [key]);
 
   /** Drops an unreadable stored value (a copy stays under `<key>.backup`) and starts from the default. */
   const startFresh = useCallback(() => {
-    try {
-      window.localStorage.removeItem(key);
-    } catch {
-      // Ignored: the state below still resets.
-    }
+    removeStored(key);
     setStoredValue(initial.current);
     setUnreadable(false);
   }, [key]);

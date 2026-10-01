@@ -12,7 +12,7 @@ import { Kbd } from '@/shared/components/Kbd'
 import { ModalDialog } from '@/shared/components/ModalDialog'
 import { WriteErrorNotice } from '@/shared/components/WriteErrorNotice'
 import { formatAgo } from '@/shared/dates'
-import { useTreeSnapshot } from '@/modules/connection/hooks/use-tree-snapshot'
+import { useRefreshControl } from '@/modules/connection/hooks/use-refresh-control'
 import { buildSearchIndex, formatPath, searchIndex } from '../lib/destinations'
 import { useSavedDestinations } from '../hooks/use-saved-destinations'
 import type { Destination } from '../types/destination'
@@ -85,13 +85,11 @@ function PickerBody({
 }: PickerBodyProps) {
   const listId = useId()
   const optionId = (index: number) => `${listId}-option-${index}`
-  const { nodes, refreshedAt, refresh } = useTreeSnapshot()
+  const { nodes, refreshedAt, refresh, rateLimited, message: refreshMessage } = useRefreshControl()
   const saved = useSavedDestinations()
   const [query, setQuery] = useState('')
   const [active, setActive] = useState(0)
   const [note, setNote] = useState<string | null>(null)
-  const [retryUntil, setRetryUntil] = useState<number | null>(null)
-  const [now, setNow] = useState(() => Date.now())
 
   // Typing stays responsive on a big tree: results follow the query a moment later.
   const deferredQuery = useDeferredValue(query)
@@ -123,15 +121,6 @@ function PickerBody({
   useEffect(() => {
     document.getElementById(optionId(activeIndex))?.scrollIntoView({ block: 'nearest' })
   }, [activeIndex, rows.length])
-
-  // Live countdown for the refresh rate limit.
-  useEffect(() => {
-    if (retryUntil === null) return
-    const timer = window.setInterval(() => setNow(Date.now()), 1000)
-    return () => window.clearInterval(timer)
-  }, [retryUntil])
-  const secondsLeft = retryUntil === null ? 0 : Math.max(0, Math.ceil((retryUntil - now) / 1000))
-  const rateLimited = secondsLeft > 0
 
   const pick = (row: Row) => {
     if (row.missing) {
@@ -171,27 +160,11 @@ function PickerBody({
     }
   }
 
-  const onRefresh = () => {
-    const result = refresh()
-    if (result.ok) {
-      setRetryUntil(null)
-      setNote('Tree refreshed.')
-    } else {
-      const until = Date.now() + result.retryInSeconds * 1000
-      setNow(Date.now())
-      setRetryUntil(until)
-      setNote(null)
-    }
-  }
-
   const refreshButton = (
-    <Button variant="outline" size="sm" className="mt-2" onClick={onRefresh} disabled={rateLimited}>
+    <Button variant="outline" size="sm" className="mt-2" onClick={refresh} disabled={rateLimited}>
       Refresh tree
     </Button>
   )
-  const rateLimitText = rateLimited
-    ? `WorkFlowy allows one refresh per minute. You can refresh again in ${secondsLeft} s.`
-    : null
 
   let lastSection: Row['section'] | null = null
   const liveCount = searching
@@ -313,7 +286,7 @@ function PickerBody({
         <div role="status" className="mt-3 rounded-lg border p-3 text-sm">
           <p>Your WorkFlowy tree is empty or hasn&rsquo;t been downloaded yet.</p>
           {refreshButton}
-          {rateLimitText && <p className="mt-2 text-muted-foreground">{rateLimitText}</p>}
+          {refreshMessage && <p className="mt-2 text-muted-foreground">{refreshMessage}</p>}
         </div>
       )}
 
@@ -324,7 +297,7 @@ function PickerBody({
             The tree may be out of date. Refresh it, or keep the note in its day.
           </p>
           {refreshButton}
-          {rateLimitText && <p className="mt-2 text-muted-foreground">{rateLimitText}</p>}
+          {refreshMessage && <p className="mt-2 text-muted-foreground">{refreshMessage}</p>}
         </div>
       )}
 

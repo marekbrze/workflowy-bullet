@@ -1,5 +1,5 @@
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
-import { ConnectionPage } from './modules/connection'
+import { ConnectionPage, SnapshotAutoRefresh } from './modules/connection'
 import { HomePage } from './modules/days'
 import { ReviewSessionPage } from './modules/review-session'
 import { AppShell } from './shared/components/AppShell'
@@ -9,6 +9,7 @@ import { REVIEW_SESSION_PATH } from './shared/navigation'
 function App() {
   return (
     <BrowserRouter basename={import.meta.env.BASE_URL}>
+      <SnapshotAutoRefresh />
       <AppShell>
         <Routes>
           <Route index element={<HomePage />} />
