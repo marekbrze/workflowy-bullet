@@ -11,7 +11,7 @@ export function InvalidKeyNotice({ onChangeKey, interruptedSession }: InvalidKey
     <section
       role="alert"
       aria-labelledby="invalid-key-heading"
-      className="rounded-xl border border-destructive/40 bg-destructive/10 p-5"
+      className="rounded-xl border border-destructive/40 bg-destructive/10 p-6"
     >
       <h1 id="invalid-key-heading" className="text-lg font-semibold">
         WorkFlowy no longer accepts this key

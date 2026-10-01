@@ -28,8 +28,8 @@ export function BacklogBlock({ days, remaining, onStart }: BacklogBlockProps) {
       {days.length === 0 && !resuming ? (
         <p className="mt-2 text-sm text-muted-foreground">No open days older than yesterday.</p>
       ) : (
-        <div className="mt-2 rounded-xl border p-4">
-          <p className="text-sm text-muted-foreground">
+        <div className="mt-2 rounded-xl border bg-card p-4">
+          <p className="text-sm text-muted-foreground tabular-nums">
             {finished
               ? 'Everything is processed — finish your session.'
               : resuming
@@ -57,7 +57,7 @@ export function BacklogBlock({ days, remaining, onStart }: BacklogBlockProps) {
                 {shown.map((day) => (
                   <li key={day.date} className="flex justify-between gap-2 py-1.5">
                     <span>{formatFullDate(day.date)}</span>
-                    <span className="text-muted-foreground">{dayStatusText(day)}</span>
+                    <span className="text-muted-foreground tabular-nums">{dayStatusText(day)}</span>
                   </li>
                 ))}
               </ul>

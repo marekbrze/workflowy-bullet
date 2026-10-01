@@ -17,7 +17,7 @@ export function SessionSummary({ processed, canUndo, onUndo, onDone }: SessionSu
   }, [])
 
   return (
-    <section aria-labelledby="summary-heading" className="rounded-xl border bg-card p-5">
+    <section aria-labelledby="summary-heading" className="rounded-xl border bg-card p-6">
       <h1 id="summary-heading" className="text-xl font-semibold">
         Queue finished
       </h1>

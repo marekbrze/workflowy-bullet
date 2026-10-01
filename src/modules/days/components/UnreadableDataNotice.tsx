@@ -10,7 +10,7 @@ export function UnreadableDataNotice({ onStartFresh }: UnreadableDataNoticeProps
     <section
       role="alert"
       aria-labelledby="unreadable-heading"
-      className="rounded-xl border border-destructive/40 bg-destructive/10 p-5"
+      className="rounded-xl border border-destructive/40 bg-destructive/10 p-6"
     >
       <h1 id="unreadable-heading" className="text-lg font-semibold">
         Your saved entries couldn&rsquo;t be read

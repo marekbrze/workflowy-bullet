@@ -39,7 +39,7 @@ export function ReviewSessionPage() {
 
 function UnknownMode() {
   return (
-    <section aria-labelledby="unknown-mode-heading" className="rounded-xl border bg-card p-5">
+    <section aria-labelledby="unknown-mode-heading" className="rounded-xl border bg-card p-6">
       <h1 id="unknown-mode-heading" className="text-xl font-semibold">
         That review doesn&rsquo;t exist
       </h1>
@@ -134,7 +134,7 @@ function ReviewSession({ mode }: { mode: ReviewMode }) {
     return (
       <>
         {header}
-        <section aria-labelledby="empty-heading" className="rounded-xl border bg-card p-5">
+        <section aria-labelledby="empty-heading" className="rounded-xl border bg-card p-6">
           <h1 id="empty-heading" className="text-xl font-semibold">
             Nothing to review
           </h1>

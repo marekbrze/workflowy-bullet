@@ -4,7 +4,7 @@ export function EntryCardSkeleton() {
     <div
       role="status"
       aria-label="Loading your entries"
-      className="animate-pulse rounded-xl border bg-card p-5"
+      className="animate-pulse rounded-xl border bg-card p-6"
     >
       <div className="flex justify-between">
         <div className="h-3 w-16 rounded bg-muted" />

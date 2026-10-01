@@ -9,7 +9,7 @@ interface ConnectScreenProps {
 /** First run, and the screen after Disconnect. */
 export function ConnectScreen({ onConnect, notice }: ConnectScreenProps) {
   return (
-    <section aria-labelledby="connect-heading" className="rounded-xl border bg-card p-5">
+    <section aria-labelledby="connect-heading" className="rounded-xl border bg-card p-6">
       <h1 id="connect-heading" className="text-xl font-semibold">
         Connect WorkFlowy
       </h1>

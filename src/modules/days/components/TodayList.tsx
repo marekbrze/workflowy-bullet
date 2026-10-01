@@ -106,7 +106,7 @@ export function TodayList({
       {entries.length === 0 ? (
         <p className="mt-2 text-sm text-muted-foreground">Nothing captured today yet.</p>
       ) : (
-        <ul className="mt-2 divide-y rounded-xl border">
+        <ul className="mt-2 divide-y rounded-xl border bg-card">
           {visible.map((entry) => (
             <li key={entry.id} className="flex flex-wrap items-center justify-between gap-2 px-3 py-2">
               <span className="min-w-0 flex-1 break-words text-sm">{entry.text}</span>
@@ -156,7 +156,7 @@ export function TodayList({
       )}
 
       {tomorrowCount > 0 && (
-        <p className="mt-2 text-xs text-muted-foreground">
+        <p className="mt-2 text-xs text-muted-foreground tabular-nums">
           {tomorrowCount} {tomorrowCount === 1 ? 'task' : 'tasks'} waiting for tomorrow
         </p>
       )}
