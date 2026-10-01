@@ -37,3 +37,13 @@ export function formatAgo(iso: string, now: number = Date.now()): string {
   const days = Math.floor(hours / 24)
   return `${days} day${days === 1 ? '' : 's'} ago`
 }
+
+/** "Tue, 13 Oct" */
+export function formatFullDate(iso: string): string {
+  const [y, m, d] = iso.split('-').map(Number)
+  return new Date(y, m - 1, d).toLocaleDateString('en-GB', {
+    weekday: 'short',
+    day: 'numeric',
+    month: 'short',
+  })
+}
