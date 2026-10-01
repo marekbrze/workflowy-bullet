@@ -13,7 +13,7 @@ Complete list of actions users can perform, organized by entity.
 |--------|------------|------|-------|
 | Connect WorkFlowy | Enter the API key so the app can read and write WorkFlowy | Owner | Stored locally |
 | Change API key | Replace the stored key | Owner | |
-| Disconnect | Remove the stored key | Owner | |
+| Disconnect | Remove the stored key and the tree snapshot | Owner | Confirmed. Active sessions and saved destinations stay stored locally for a later reconnect |
 
 ### TreeSnapshot
 
