@@ -12,6 +12,7 @@ interface YesterdayCardProps {
 export function YesterdayCard({ day, remaining, onStart }: YesterdayCardProps) {
   const resuming = remaining !== null
   const canStart = resuming || day.waiting > 0
+  const finished = resuming && remaining === 0
 
   return (
     <section aria-labelledby="yesterday-heading" className="rounded-xl border bg-card p-5">
@@ -22,11 +23,20 @@ export function YesterdayCard({ day, remaining, onStart }: YesterdayCardProps) {
         <span className="text-xs text-muted-foreground">{formatFullDate(day.date)}</span>
       </div>
       <p className="mt-1 text-sm text-muted-foreground">
-        {resuming ? `${remaining} left in your review` : dayStatusText(day)}
+        {finished
+          ? 'Everything is processed — finish your review.'
+          : resuming
+            ? `${remaining} left in your review`
+            : dayStatusText(day)}
       </p>
       {canStart && (
-        <Button className="mt-4" size="lg" onClick={onStart}>
-          {resuming ? 'Continue' : 'Start'}
+        <Button
+          className="mt-4"
+          size="lg"
+          onClick={onStart}
+          aria-label={`${finished ? 'Finish' : resuming ? 'Continue' : 'Start'} yesterday review`}
+        >
+          {finished ? 'Finish' : resuming ? 'Continue' : 'Start'}
         </Button>
       )}
     </section>

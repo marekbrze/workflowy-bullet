@@ -46,7 +46,7 @@ Complete list of actions users can perform, organized by entity.
 |--------|------------|------|-------|
 | Classify entry | Mark an untyped entry as task, note, or event; the app writes `#task` / `#note` / `#event` | Owner | Only entries needing a decision enter the queue |
 | Change type | Correct an existing type, including one tagged manually in WorkFlowy | Owner | On a task's card (key G); undoable |
-| Quick-type from Today list | Classify an entry directly from the Today list, outside a session | Owner | |
+| Quick-type from Today list | Classify or correct an entry directly from the Today list, outside a session | Owner | Same rule as the session card; a quiet Change on typed rows |
 | Delete entry | Permanently delete an entry that should never have existed (junk, duplicate) | Owner | Any type, including untyped. Requires confirmation. **Cannot be undone.** Distinct from Irrelevant |
 
 ### Task (Entry of type task)
@@ -64,7 +64,7 @@ Complete list of actions users can perform, organized by entity.
 | Action | Description | Role | Notes |
 |--------|------------|------|-------|
 | Keep in day | Leave the note where it is | Owner | |
-| Mirror to destination | Create a WorkFlowy mirror of the note under a chosen destination | Owner | Max one mirror per note. Offered at classification |
+| Mirror to destination | Create a WorkFlowy mirror of the note under a chosen destination | Owner | Max one mirror per note (choosing another place moves it). Offered at classification, and from the Today list (File… / Move…) |
 
 ### Event (Entry of type event)
 

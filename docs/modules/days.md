@@ -22,7 +22,7 @@ The calm front door of the app. On opening it, the user sees everything that mat
 
 ### Today list and quick-typing
 1. The Today block lists today's entries, each with a type chip when it already has one.
-2. For an untyped entry, the user presses T / N / E (or clicks) to set the type directly — no session needed. The tag is written to WorkFlowy.
+2. For an untyped entry, the user presses T / N / E (or clicks) to set the type directly — no session needed. The tag is written to WorkFlowy. A typed row has a quiet "Change" to correct the type, and a note row has "File…" (or "Move…") that opens the destination picker.
 3. "Start today session" opens a `today` session over today's entries.
 
 ### Resume a session
@@ -44,7 +44,8 @@ The calm front door of the app. On opening it, the user sees everything that mat
 | Action | Description | Entity | Notes |
 |--------|------------|--------|-------|
 | View Today list | Today's entries as a plain list | Day | Entry point to the `today` session |
-| Quick-type from Today list | Set T / N / E on an untyped entry without a session | Entry | Writes the tag to WorkFlowy |
+| Quick-type from Today list | Set or change T / N / E on an entry without a session | Entry | Writes the tag to WorkFlowy; same rule as the session card (a completed untyped entry becomes a done task) |
+| File note from Today list | Mirror a note to a destination (or move its mirror) without a session | NoteMirror | Opens the destination picker |
 | View day status | Calm text: how many entries are waiting, or "Closed" | Day | `isClosed` is derived |
 | View Backlog | Counter of open days older than yesterday, full list on demand | Day | Oldest first, since the calendar began |
 | Start today session | Open a `today` session | ReviewSession | Mode `today` |
@@ -57,7 +58,12 @@ The calm front door of the app. On opening it, the user sees everything that mat
 - **Nothing to process at all**: yesterday closed, today empty, no backlog — one short calm message.
 - **Yesterday has no entries / no day node**: the Yesterday card says there is nothing to review.
 - **Huge backlog** (hundreds of open days): only the counter and the oldest-first start are shown; the list stays collapsed.
-- **Tree snapshot stale or refreshing**: today's entries and day statuses may be out of date — the block should indicate freshness (details in `proto-edgecases`).
+- **Tree snapshot stale or refreshing**: after an hour the status line reads "Your tree may be out of date" with Refresh next to it (calm, no alarm colors). While refreshing or rate-limited it says so.
+- **Saved entries cannot be read**: the home screen says so instead of "No entries yet", explains that a copy was kept and offers "Start fresh".
+- **A screen left open overnight**: "Today" and "Yesterday" update at midnight and when the tab regains focus.
+- **Session counts** reflect what the session will really show (entries since deleted or settled are not counted, entries that arrived later are). A session with nothing left offers "Finish".
+- **Tasks rolled over to tomorrow**: one quiet line under the Today list ("2 tasks waiting for tomorrow").
+- **Many entries / many open days**: Today shows the first 20 entries and the expanded backlog the oldest 30 days, each with "Show all".
 - **Today's day node does not exist yet**: the Today list is empty; creating it is left to WorkFlowy/the API when needed.
 - **Several sessions active** (one per mode): each block shows its own "Continue".
 - **Disconnected / invalid key**: no data can be shown — the home screen leads to `connection` instead.

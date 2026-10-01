@@ -1,5 +1,6 @@
 import { addDays } from '@/shared/dates'
-import { needsDecision } from '@/modules/review-session/lib/session-logic'
+import { needsDecision, typeEntry } from '@/modules/review-session/lib/session-logic'
+import type { Destination } from '@/modules/note-filing/types/destination'
 import type { Entry, EntryType } from '@/modules/review-session/types/entry'
 
 export interface DaySummary {
@@ -28,9 +29,28 @@ export function dayStatusText(day: DaySummary): string {
   return `${day.waiting} ${day.waiting === 1 ? 'entry' : 'entries'} waiting`
 }
 
-/** Sets the type of an untyped entry (the app writes the tag to WorkFlowy). */
+/** Sets or corrects the type of an entry (the app writes the tag to WorkFlowy). Same rule as the session card. */
 export function quickType(entries: Entry[], id: string, type: EntryType, now: string): Entry[] {
-  return entries.map((e) =>
-    e.id === id ? { ...e, type, outcome: type === 'task' ? 'open' : null, updatedAt: now } : e,
-  )
+  return entries.map((e) => (e.id === id ? typeEntry(e, type, now) : e))
+}
+
+/** Files a note: sets (or moves) its mirror. */
+export function fileNote(
+  entries: Entry[],
+  id: string,
+  destination: Destination,
+  now: string,
+): Entry[] {
+  return entries.map((e) => (e.id === id ? { ...e, mirroredTo: destination, updatedAt: now } : e))
+}
+
+/** Open tasks that were rolled over to tomorrow. */
+export function tomorrowTaskCount(entries: Entry[], today: string): number {
+  const tomorrow = addDays(today, 1)
+  return entries.filter((e) => e.date === tomorrow && e.type === 'task' && e.outcome === 'open').length
+}
+
+/** Show only the first `limit` items until the user asks for all. */
+export function limitItems<T>(items: T[], limit: number, showAll: boolean): T[] {
+  return showAll ? items : items.slice(0, limit)
 }

@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
-import { reportStorageFailure, writeStorage } from '@/shared/lib/storage';
+import { readStorage, reportStorageFailure, writeStorage } from '@/shared/lib/storage';
 
 interface Options {
   /**
@@ -12,24 +12,18 @@ interface Options {
 export function useLocalStorage<T>(key: string, initialValue: T, options: Options = {}) {
   const { reportFailure = true } = options;
   const initial = useRef(initialValue);
-  const [storedValue, setStoredValue] = useState<T>(() => {
-    try {
-      const item = window.localStorage.getItem(key);
-      return item ? (JSON.parse(item) as T) : initialValue;
-    } catch {
-      return initialValue;
-    }
-  });
+  // The first read happens once; an unreadable value falls back to the default but is flagged.
+  const [first] = useState(() => readStorage<T>(key, initialValue));
+  const [storedValue, setStoredValue] = useState<T>(first.value);
+  const [unreadable, setUnreadable] = useState(first.unreadable);
 
   // Another tab changed this key: pick up its value instead of overwriting it later.
   useEffect(() => {
     const onStorage = (event: StorageEvent) => {
       if (event.key !== key) return;
-      try {
-        setStoredValue(event.newValue ? (JSON.parse(event.newValue) as T) : initial.current);
-      } catch {
-        setStoredValue(initial.current);
-      }
+      const next = readStorage<T>(key, initial.current);
+      setStoredValue(next.value);
+      setUnreadable(next.unreadable);
     };
     window.addEventListener('storage', onStorage);
     return () => window.removeEventListener('storage', onStorage);
@@ -45,6 +39,7 @@ export function useLocalStorage<T>(key: string, initialValue: T, options: Option
         return false;
       }
       setStoredValue(valueToStore);
+      setUnreadable(false);
       return true;
     },
     [key, storedValue, reportFailure],
@@ -59,5 +54,16 @@ export function useLocalStorage<T>(key: string, initialValue: T, options: Option
     }
   }, [key]);
 
-  return [storedValue, setValue, removeValue] as const;
+  /** Drops an unreadable stored value (a copy stays under `<key>.backup`) and starts from the default. */
+  const startFresh = useCallback(() => {
+    try {
+      window.localStorage.removeItem(key);
+    } catch {
+      // Ignored: the state below still resets.
+    }
+    setStoredValue(initial.current);
+    setUnreadable(false);
+  }, [key]);
+
+  return [storedValue, setValue, removeValue, { unreadable, startFresh }] as const;
 }

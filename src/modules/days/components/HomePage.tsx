@@ -8,6 +8,7 @@ import { REVIEW_SESSION_PATH } from '@/shared/navigation'
 import { useDays } from '../hooks/use-days'
 import { BacklogBlock } from './BacklogBlock'
 import { TodayList } from './TodayList'
+import { UnreadableDataNotice } from './UnreadableDataNotice'
 import { YesterdayCard } from './YesterdayCard'
 
 export function HomePage() {
@@ -16,13 +17,15 @@ export function HomePage() {
   const connection = useConnection()
 
   const start = (mode: ReviewMode) => navigate(`${REVIEW_SESSION_PATH}/${mode}`)
-  const remaining = (mode: ReviewMode) => days.sessionFor(mode)?.queue.length ?? null
 
   // Without a working connection there is nothing to show: lead the user to fix it.
   if (connection.status === 'disconnected') return <ConnectScreen onConnect={connection.connect} />
   if (connection.status === 'invalid') {
     return <InvalidKeyNotice onChangeKey={() => navigate('/connection')} />
   }
+
+  // Saved entries that exist but cannot be read must not look like "no entries".
+  if (days.entriesUnreadable) return <UnreadableDataNotice onStartFresh={days.startFresh} />
 
   const allClear =
     days.yesterdayStatus.waiting === 0 && days.todayStatus.waiting === 0 && days.backlog.length === 0
@@ -39,19 +42,21 @@ export function HomePage() {
 
       <YesterdayCard
         day={days.yesterdayStatus}
-        remaining={remaining('yesterday')}
+        remaining={days.remaining('yesterday')}
         onStart={() => start('yesterday')}
       />
       <TodayList
         entries={days.todayEntries}
         waiting={days.todayStatus.waiting}
-        remaining={remaining('today')}
+        remaining={days.remaining('today')}
+        tomorrowCount={days.tomorrowCount}
         onQuickType={days.quickType}
+        onFileNote={days.fileNote}
         onStart={() => start('today')}
       />
       <BacklogBlock
         days={days.backlog}
-        remaining={remaining('backlog')}
+        remaining={days.remaining('backlog')}
         onStart={() => start('backlog')}
       />
 

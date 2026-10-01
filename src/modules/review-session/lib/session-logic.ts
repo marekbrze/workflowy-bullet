@@ -144,6 +144,15 @@ function decision(
   return { id: generateId(), kind, entryId: before.id, before, at: now, ...extra }
 }
 
+/**
+ * The one rule for typing an entry, used by the session card and the Today list.
+ * An entry already completed in WorkFlowy becomes a done task; it is never re-opened.
+ */
+export function typeEntry(entry: Entry, type: EntryType, now: string): Entry {
+  const outcome = type === 'task' ? (entry.completed === true ? 'done' : 'open') : null
+  return { ...entry, type, outcome, updatedAt: now }
+}
+
 /** Sets the type of an entry — the first classification, or a correction (Change type). */
 export function classify(
   state: SessionState,
@@ -152,11 +161,8 @@ export function classify(
   now: string,
 ): SessionState {
   const before = findEntry(state.entries, entryId)
-  // An entry already completed in WorkFlowy becomes a done task; it is never re-opened.
-  const outcome = type === 'task' ? (before.completed === true ? 'done' : 'open') : null
-  const patch: Partial<Entry> = { type, outcome }
   return {
-    entries: patchEntry(state.entries, entryId, patch, now),
+    entries: state.entries.map((e) => (e.id === entryId ? typeEntry(e, type, now) : e)),
     // A task still needs its fate and a note still needs a destination; an event is done,
     // and so is a completed task — `reconcileQueue` drops both.
     queue: type === 'event' ? without(state.queue, entryId) : state.queue,

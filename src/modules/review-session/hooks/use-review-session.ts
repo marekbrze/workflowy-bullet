@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useLocalStorage } from '@/shared/hooks/use-local-storage'
 import { generateId } from '@/shared/types'
-import { todayISO } from '@/shared/dates'
+import { useToday } from '@/shared/hooks/use-today'
 import type { Destination } from '@/modules/note-filing/types/destination'
 import type { Entry, EntryType } from '../types/entry'
 import type { ReviewMode, ReviewSession } from '../types/session'
@@ -45,7 +45,7 @@ export function useReviewSession(mode: ReviewMode) {
   const [error, setError] = useState<string | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
   const retryAction = useRef<(() => void) | null>(null)
-  const today = useMemo(todayISO, [])
+  const today = useToday()
 
   // An ended session is removed, so any stored session is active.
   const session = sessions.find((s) => s.mode === mode) ?? null

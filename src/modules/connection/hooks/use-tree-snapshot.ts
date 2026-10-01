@@ -4,6 +4,14 @@ import type { Destination } from '@/modules/note-filing/types/destination'
 /** WorkFlowy allows one `/nodes-export` request per minute. */
 export const REFRESH_LIMIT_SECONDS = 60
 
+/** After this long the snapshot is flagged as possibly out of date. */
+export const STALE_AFTER_MINUTES = 60
+
+export function isSnapshotStale(refreshedAt: string | null, now: number = Date.now()): boolean {
+  if (!refreshedAt) return true
+  return now - new Date(refreshedAt).getTime() > STALE_AFTER_MINUTES * 60_000
+}
+
 interface SnapshotMeta {
   refreshedAt: string
 }
