@@ -1,0 +1,54 @@
+# note-filing — Edge Cases
+
+Audit of the lo-fi prototype in `src/modules/note-filing/` (plus the shared dialog and the connection snapshot hook it relies on) against `docs/modules/note-filing.md`. Findings come from reading the code and the logic checks run during `proto-lofi`; no browser run was possible in the audit environment, so nothing here was observed on screen.
+
+## Coverage
+- **Spec already captured** (Edge Cases section): no results · stale snapshot (a destination may no longer exist) · refresh blocked by the rate limit · same node name in many places · note already has a mirror · pinned destination deleted in WorkFlowy · empty pinned and recent lists.
+- **Already handled in code**:
+  - No results → message with "Refresh tree" and keep-in-day (`DestinationPicker.tsx:179-190`).
+  - Refresh blocked by the rate limit → message with seconds left (`DestinationPicker.tsx:93-100`, `use-tree-snapshot.ts`).
+  - Same name in many places → the path is shown on every row (`DestinationPicker.tsx:159-161`) — but see #4.
+  - Empty pinned and recent lists → hint under the search field (`DestinationPicker.tsx:192-196`).
+  - Write failure → error inside the picker, which stays open; a destination is remembered as "recent" only after the mirror was saved (`DestinationPicker.tsx:75-76,198`).
+  - Storage failure when pinning or remembering → the app-wide banner (`useLocalStorage`, shared).
+- **Spec-flagged but not handled**: note already has a mirror (#2), pinned destination deleted (#1).
+- **New gaps found**: 16
+- **By severity**: 🔴 0 · 🟡 9 · 🟢 7
+
+## Inventory
+
+| # | Severity | Category | Edge case | Behavior today | Suggested behavior | Where |
+|---|----------|----------|-----------|----------------|--------------------|-------|
+| 1 | 🟡 | Cross-module & lifecycle | Pinned or recent place no longer exists in the tree | Saved destinations store a copy of the node; they are never checked against the current snapshot, so a deleted or moved node is still offered with its old name, path and child count, and picking it "succeeds". | Cross-check saved places against `nodes` when the picker opens; mark missing ones ("no longer in your tree") and block picking them, with an option to unpin. | `DestinationPicker.tsx:69-70`, `use-saved-destinations.ts:15-16` |
+| 2 | 🟡 | Cross-module & lifecycle | Note that already has a mirror | `decideNote` overwrites `mirroredTo` and `classify` never clears it, so an entry that already carries a mirror (e.g. retyped to task in WorkFlowy, then back to note via Change type) can be mirrored a second time, breaking "at most one mirror per note". Not reachable from the mock data today; reachable with real data. | When the entry already has a mirror, show it ("Mirrored to X") and offer Move / Keep instead of silently adding another; clear or confirm the old mirror on retype. | `session-logic.ts` (`decideNote`, `classify`), `DestinationPicker.tsx:13-24` (no entry context) |
+| 3 | 🟡 | Data states | Picker offers nodes that make no sense for this note | Search runs over the whole tree, including the note itself, its own children and the day it belongs to; mirroring a note under its own day node or inside itself is pointless or impossible. | Pass the entry to the picker and exclude it, its descendants and its day node from results. | `destinations.ts` (`searchDestinations`), `DestinationPicker.tsx:66-67` |
+| 4 | 🟡 | Data states | The part of the path that tells same-named nodes apart is cut off | The path is written outermost-first and rendered with `truncate`, so long paths lose the closest parent — the very segment that distinguishes two "Ideas". | Show the last two or three segments with a leading ellipsis, or truncate from the start. | `DestinationPicker.tsx:159-161` |
+| 5 | 🟡 | Navigation & flow | No way out of the picker without deciding | After a note is classified the only exits are a destination or "Keep in day" (Esc), which records a decision. A note chosen by mistake takes two Undos (the keep-in-day, then the classify), and the picker re-opens in between. | A "Back" action that reverts the classification and returns to the card (or Change type reachable from the picker). | `DestinationPicker.tsx:200-207`, `ReviewSessionPage.tsx:228` |
+| 6 | 🟡 | Forms & input | No keyboard way to pin or unpin | Focus stays in the search field and the stars are separate tab stops after it, so pinning the highlighted row means tabbing through every star. In a keyboard-first flow this is the one mouse-leaning action. | A shortcut on the active row (for example Shift+Enter or Ctrl+D) that toggles its pin. | `DestinationPicker.tsx:79-91,163-171` |
+| 7 | 🟡 | Data states | Results are capped at 8 without saying so | `searchDestinations` slices to `MAX_RESULTS`; with a short query on a big tree the user cannot tell there are more. | A one-line "Showing the first 8 — keep typing to narrow" when results were cut. | `destinations.ts` (`MAX_RESULTS`), `DestinationPicker.tsx:129-177` |
+| 8 | 🟡 | Prototype-specific | Very large tree | Every keystroke maps, filters and sorts all nodes, and the picker parses the whole `tree-nodes` JSON on open. A real tree can be tens of thousands of nodes and may not even fit LocalStorage's quota. | Search a precomputed lowercase index, debounce typing, cap work per keystroke; decide where a large snapshot lives when the real API arrives. | `destinations.ts` (`searchDestinations`), `use-tree-snapshot.ts:20` |
+| 9 | 🟡 | Action outcomes | No in-flight state while the mirror is written | The write is synchronous in the prototype. With the real API the rows stay clickable during the request, allowing a double pick. | Disable the list while a write is pending; show a calm in-flight indicator. (Same cause as review-session #9.) | `DestinationPicker.tsx:74-77,152` |
+| 10 | 🟢 | Forms & input | Enter during IME composition | Enter picks the active row even while a composition is being confirmed. | Ignore Enter when `isComposing`. | `DestinationPicker.tsx:87-90` |
+| 11 | 🟢 | Data states | Highlight is incomplete | Only a name match is highlighted, so a result that matched on its path shows no reason; lower-casing can shift indexes for a few characters (e.g. İ), misaligning the highlight. | Highlight path matches too; match on a normalized form. | `DestinationPicker.tsx:41-54` |
+| 12 | 🟢 | Data states | Very long node name | The name has no wrapping or truncation and can overflow the row. | `break-words` or truncate with the full name in `title`. | `DestinationPicker.tsx:156-158` |
+| 13 | 🟢 | Loading & async | Screen readers are not told how many results there are | The list changes as the user types but nothing announces the count. | A polite live region: "5 results" / "No matches". | `DestinationPicker.tsx:129-196` |
+| 14 | 🟢 | Errors | Rate-limit message is static | "Try again in 42 s" does not count down and stays after the time has passed. | Live countdown, or re-enable the button when the limit lifts. | `DestinationPicker.tsx:93-100,185-188` |
+| 15 | 🟢 | Data states | Empty tree reads like "no matches" | With no nodes at all, the hint still says "Type to search" and typing gives "No matches… the tree may be out of date". | A distinct "Your tree is empty or not downloaded yet" with a Refresh action. | `DestinationPicker.tsx:179-196` |
+| 16 | 🟢 | Data states | Pinned list is unbounded and has no order | Pinned places appear in the order they were pinned, push Recent below the fold when there are many, and cannot be reordered. | Spec decision: cap, or alphabetical/most-used ordering. | `destinations.ts:29-31` |
+
+Checked with no issues found: special characters and emoji in names (rendered as text nodes; search uses plain substring matching, so no regex or HTML injection); empty collection (first-use hint and empty-tree story exist); one vs many saved places (recent is capped at 5; pinned scrolls); resume after reload mid-picker (the entry stays on its note step, so the picker re-opens); offline behavior of the prototype (everything is local); storage write failure (shared hook returns `false` and shows the app banner; "recent" is only recorded after a successful mirror); back button and deep links (the picker is an overlay on the review route, which survives refresh); permissions (single-user tool).
+
+## Priority list
+1. **Integrity cluster (#1, #2, #3)** — stale pinned/recent places, a second mirror on one note, and nonsensical destinations all need the same two inputs: the current tree and the entry being filed. One change to the picker's props and data covers all three.
+2. **Back out of the picker (#5)** — a mis-typed note currently costs two Undos and a re-opening dialog.
+3. **Keyboard pinning (#6)** — the flow is keyboard-first; pinning is its one mouse-leaning step.
+4. **Distinguishing paths and hidden cap (#4, #7)** — cheap fixes that make search results trustworthy.
+5. **Large tree (#8)** and **in-flight state (#9)** — design for the real API; the second is deferred with review-session #9.
+6. Polish (#10–#16).
+
+## Hand-off to proto-harden
+Implement first:
+- Give the picker the entry being filed and the current tree; use them to flag missing saved places, exclude invalid destinations and surface an existing mirror (#1, #2, #3).
+- Add a Back action to the picker (#5) and a keyboard pin shortcut (#6).
+- Fix the path truncation and show a "more results" line (#4, #7).
+- Designer decisions needed: what happens to an existing mirror when a note is filed again — move, keep both, or ask (#2); whether pinned places get a cap or an order (#16).
