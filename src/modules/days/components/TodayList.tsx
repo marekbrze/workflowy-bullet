@@ -109,7 +109,7 @@ export function TodayList({
         <ul className="mt-2 divide-y rounded-xl border bg-card">
           {visible.map((entry) => (
             <li key={entry.id} className="flex flex-wrap items-center justify-between gap-2 px-3 py-2">
-              <span className="min-w-0 flex-1 break-words text-sm">{entry.text}</span>
+              <span className="min-w-0 flex-1 break-words text-base">{entry.text}</span>
               {!entry.type || retypingId === entry.id ? (
                 typeRow(entry)
               ) : (

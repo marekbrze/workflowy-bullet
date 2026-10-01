@@ -8,6 +8,7 @@ import {
   type ReactNode,
 } from 'react'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import { Kbd } from '@/shared/components/Kbd'
 import { ModalDialog } from '@/shared/components/ModalDialog'
 import { WriteErrorNotice } from '@/shared/components/WriteErrorNotice'
@@ -190,9 +191,8 @@ function PickerBody({
       <label htmlFor={`${listId}-search`} className="sr-only">
         Search WorkFlowy
       </label>
-      <input
+      <Input
         id={`${listId}-search`}
-        type="text"
         role="combobox"
         aria-expanded={rows.length > 0}
         aria-controls={listId}
@@ -207,7 +207,7 @@ function PickerBody({
           setNote(null)
         }}
         onKeyDown={onKeyDown}
-        className="mt-3 h-9 w-full rounded-lg border border-input bg-background px-3 text-sm focus-ring"
+        className="mt-3"
       />
       <p className="sr-only" aria-live="polite">
         {liveCount}
@@ -229,7 +229,7 @@ function PickerBody({
                   </div>
                 )}
                 <div
-                  className={`flex items-center gap-1 rounded-lg ${rowIndex === activeIndex ? 'bg-accent' : ''}`}
+                  className={`flex items-center gap-1 rounded-lg ${rowIndex === activeIndex ? 'bg-accent' : 'hover:bg-muted'}`}
                 >
                   <button
                     type="button"
@@ -243,7 +243,7 @@ function PickerBody({
                     className={`flex min-w-0 flex-1 flex-col items-start rounded-lg px-2 py-1.5 text-left outline-none ${missing ? 'text-muted-foreground' : ''}`}
                   >
                     <span className="sr-only">{row.section}: </span>
-                    <span className="break-words text-sm">
+                    <span className="break-words text-base">
                       <Highlight text={destination.name} query={searching ? deferredQuery : ''} />
                     </span>
                     <span className="break-words text-sm text-muted-foreground">

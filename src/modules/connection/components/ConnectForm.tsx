@@ -1,5 +1,6 @@
 import { useId, useRef, useState, type FormEvent } from 'react'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import type { ConnectPhase, ConnectResult } from '../types/connection'
 
 export type ConnectSubmit = (
@@ -64,7 +65,7 @@ export function ConnectForm({
         WorkFlowy API key
       </label>
       <div className="mt-1 flex gap-2">
-        <input
+        <Input
           ref={inputRef}
           id={fieldId}
           type={revealed ? 'text' : 'password'}
@@ -75,7 +76,7 @@ export function ConnectForm({
           disabled={busy}
           aria-invalid={shownError ? true : undefined}
           aria-describedby={shownError ? `${fieldId}-error` : undefined}
-          className="h-9 min-w-0 flex-1 rounded-lg border border-input bg-background px-3 text-sm focus-ring disabled:opacity-50"
+          className="flex-1"
         />
         <Button
           type="button"
