@@ -50,6 +50,7 @@ erDiagram
 **Instances per user**: Many
 **Ownership**: User (WorkFlowy)
 **Lifecycle**: Created by the user in WorkFlowy (or by the app as a roll-over copy). Ends as a typed record (note/event), a completed task, or is permanently deleted.
+**Completed in WorkFlowy**: an entry carries a `completed` flag. Done / migrated / irrelevant tasks are completed; an untyped entry can already be completed — classifying it as a task makes it a done task (it is never re-opened).
 **States**:
 - `untyped` → `task` / `note` / `event` (classification; the type can be changed later)
 - Task: `open` → `done` | `migrated` (rolled over) | `irrelevant` — all three are completed in WorkFlowy

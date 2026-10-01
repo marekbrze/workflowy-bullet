@@ -57,3 +57,9 @@ export const NoResults: Story = {
 export const EmptyTree: Story = {
   loaders: [async () => seed({ tree: false, saved: false })],
 }
+
+/** Saving the mirror failed: the picker stays open and offers a retry. */
+export const WriteFailed: Story = {
+  args: { error: true, onRetry: () => {}, onDismissError: () => {} },
+  loaders: [async () => seed({ tree: true, saved: true })],
+}

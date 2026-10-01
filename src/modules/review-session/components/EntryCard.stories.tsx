@@ -14,6 +14,7 @@ const base: Entry = {
   date: addDays(today, -1),
   type: null,
   outcome: null,
+  completed: false,
   mirroredTo: null,
 }
 
@@ -49,6 +50,16 @@ export const LongText: Story = {
     entry: {
       ...base,
       text: 'Call with Piotr: he is open to a trial period and wants a written summary of scope before Friday. He also mentioned the budget cycle closes at the end of the month, so we should decide quickly.',
+    },
+  },
+}
+
+export const LongUnbrokenText: Story = {
+  args: {
+    entry: {
+      ...base,
+      text: 'https://example.com/a/very/long/link/that/has/no/spaces/at/all/and/keeps/going/and/going/forever/and/ever',
+      children: ['same sub-item', 'same sub-item'],
     },
   },
 }

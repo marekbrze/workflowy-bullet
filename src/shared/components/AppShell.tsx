@@ -2,6 +2,7 @@ import type { ReactNode } from 'react'
 import { Link, NavLink, useLocation } from 'react-router-dom'
 import { cn } from '@/lib/utils'
 import { APP_NAME, NAV_ITEMS, REVIEW_SESSION_PATH } from '@/shared/navigation'
+import { StorageFailureBanner } from './StorageFailureBanner'
 
 interface AppShellProps {
   children: ReactNode
@@ -19,6 +20,8 @@ export function AppShell({ children }: AppShellProps) {
       >
         Skip to content
       </a>
+
+      <StorageFailureBanner />
 
       {/* Focus mode: during a review session only the session itself is shown. */}
       {!isFocusMode && <TopBar />}

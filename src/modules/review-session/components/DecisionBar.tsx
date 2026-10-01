@@ -9,6 +9,9 @@ interface DecisionBarProps {
   mode: ReviewMode
   onClassify: (type: EntryType) => void
   onTask: (decision: TaskDecision) => void
+  /** Replaces the default question, e.g. when correcting a type */
+  heading?: string
+  disabled?: boolean
 }
 
 interface Option {
@@ -18,7 +21,14 @@ interface Option {
 }
 
 // Positional home-row keys: the first option is always A, then S, D, F.
-export function DecisionBar({ step, mode, onClassify, onTask }: DecisionBarProps) {
+export function DecisionBar({
+  step,
+  mode,
+  onClassify,
+  onTask,
+  heading,
+  disabled,
+}: DecisionBarProps) {
   const options: Option[] =
     step === 'classify'
       ? [
@@ -42,11 +52,17 @@ export function DecisionBar({ step, mode, onClassify, onTask }: DecisionBarProps
   return (
     <section aria-labelledby="decision-heading" className="mt-4">
       <h2 id="decision-heading" className="mb-2 text-sm text-muted-foreground">
-        {step === 'classify' ? 'What is this?' : 'What happens to this task?'}
+        {heading ?? (step === 'classify' ? 'What is this?' : 'What happens to this task?')}
       </h2>
       <div className="flex flex-wrap gap-2">
         {options.map((option) => (
-          <Button key={option.key} variant="outline" size="lg" onClick={option.onSelect}>
+          <Button
+            key={option.key}
+            variant="outline"
+            size="lg"
+            onClick={option.onSelect}
+            disabled={disabled}
+          >
             {option.label}
             <Kbd>{option.key}</Kbd>
           </Button>

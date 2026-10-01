@@ -17,5 +17,7 @@ export interface Entry extends BaseEntity {
   type: EntryType | null
   /** Only set for tasks */
   outcome: TaskOutcome | null
+  /** Completed in WorkFlowy. Tasks that are done/migrated/irrelevant are completed; an untyped entry can be too. */
+  completed: boolean
   mirroredTo: Destination | null
 }

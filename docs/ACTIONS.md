@@ -45,7 +45,7 @@ Complete list of actions users can perform, organized by entity.
 | Action | Description | Role | Notes |
 |--------|------------|------|-------|
 | Classify entry | Mark an untyped entry as task, note, or event; the app writes `#task` / `#note` / `#event` | Owner | Only entries needing a decision enter the queue |
-| Change type | Correct an existing type, including one tagged manually in WorkFlowy | Owner | |
+| Change type | Correct an existing type, including one tagged manually in WorkFlowy | Owner | On a task's card (key G); undoable |
 | Quick-type from Today list | Classify an entry directly from the Today list, outside a session | Owner | |
 | Delete entry | Permanently delete an entry that should never have existed (junk, duplicate) | Owner | Any type, including untyped. Requires confirmation. **Cannot be undone.** Distinct from Irrelevant |
 

@@ -1,20 +1,22 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { ConfirmDialog } from '@/shared/components/ConfirmDialog'
 import { Kbd } from '@/shared/components/Kbd'
+import { WriteErrorNotice } from '@/shared/components/WriteErrorNotice'
 import { InvalidKeyNotice } from '@/modules/connection/components/InvalidKeyNotice'
 import { useConnection } from '@/modules/connection/hooks/use-connection'
 import { DestinationPicker } from '@/modules/note-filing/components/DestinationPicker'
 import { useHotkeys } from '../hooks/use-hotkeys'
 import { useReviewSession } from '../hooks/use-review-session'
 import { getStep } from '../lib/session-logic'
+import type { EntryType } from '../types/entry'
 import { REVIEW_MODES, type ReviewMode } from '../types/session'
 import { DecisionBar } from './DecisionBar'
 import { EntryCard } from './EntryCard'
+import { EntryCardSkeleton } from './EntryCardSkeleton'
 import { SessionSummary } from './SessionSummary'
 import { SessionToolbar } from './SessionToolbar'
-import { WriteErrorNotice } from './WriteErrorNotice'
 
 const MODE_LABELS: Record<ReviewMode, string> = {
   today: 'Today',
@@ -26,7 +28,7 @@ export function ReviewSessionPage() {
   const { mode } = useParams()
   const navigate = useNavigate()
   const connection = useConnection()
-  if (!REVIEW_MODES.includes(mode as ReviewMode)) return <Navigate to="/" replace />
+  if (!REVIEW_MODES.includes(mode as ReviewMode)) return <UnknownMode />
   if (connection.status === 'disconnected') return <Navigate to="/" replace />
   // The session itself stays stored; it resumes once the key works again.
   if (connection.status === 'invalid') {
@@ -35,43 +37,80 @@ export function ReviewSessionPage() {
   return <ReviewSession mode={mode as ReviewMode} />
 }
 
+function UnknownMode() {
+  return (
+    <section aria-labelledby="unknown-mode-heading" className="rounded-xl border bg-card p-5">
+      <h1 id="unknown-mode-heading" className="text-xl font-semibold">
+        That review doesn&rsquo;t exist
+      </h1>
+      <p className="mt-2 text-sm text-muted-foreground">
+        Start a review from the Today screen instead.
+      </p>
+      <Link to="/" className="mt-4 inline-block text-sm underline underline-offset-4">
+        Back to Today
+      </Link>
+    </section>
+  )
+}
+
 function ReviewSession({ mode }: { mode: ReviewMode }) {
   const navigate = useNavigate()
   const review = useReviewSession(mode)
   const [confirming, setConfirming] = useState<'delete' | 'end' | null>(null)
+  const [retyping, setRetyping] = useState(false)
 
   const { session, currentEntry, error, start, candidateCount } = review
 
-  // Open a session as soon as there is something to process; a stored one is resumed as is.
+  // Open a session as soon as there is something to process. After a failed save, wait for "Try again".
   useEffect(() => {
-    if (!session && candidateCount > 0) start()
-  }, [session, candidateCount, start])
+    if (!session && candidateCount > 0 && !error) start()
+  })
+
+  // A resumed session picks up entries that arrived since it started — once per visit.
+  const resumed = useRef(false)
+  useEffect(() => {
+    if (!session || resumed.current) return
+    resumed.current = true
+    review.addNewEntries()
+  })
 
   const exit = () => navigate('/')
   const step = currentEntry ? getStep(currentEntry) : null
-  const queueLength = session?.queue.length ?? 0
+  const queueLength = review.queue.length
   const overlayOpen = confirming !== null || step === 'note'
+  const locked = error !== null
+  // Correcting a type is offered while the entry is on its task step.
+  const canChangeType = step === 'task'
+  const showClassify = step === 'classify' || (canChangeType && retyping)
+
+  const classify = (type: EntryType) => {
+    if (retyping) {
+      setRetyping(false)
+      if (currentEntry?.type === type) return
+    }
+    review.classify(type)
+  }
 
   const handlers: Record<string, () => void> = {
-    escape: exit,
+    escape: () => (retyping ? setRetyping(false) : exit()),
     k: review.undo,
   }
   if (currentEntry) {
     handlers.j = review.skip
     handlers.l = () => setConfirming('delete')
-    if (step === 'classify') {
-      handlers.a = () => review.classify('task')
-      handlers.s = () => review.classify('note')
-      handlers.d = () => review.classify('event')
-    }
-    if (step === 'task') {
+    if (canChangeType) handlers.g = () => setRetyping((value) => !value)
+    if (showClassify) {
+      handlers.a = () => classify('task')
+      handlers.s = () => classify('note')
+      handlers.d = () => classify('event')
+    } else if (step === 'task') {
       handlers.a = () => review.decideTask('done')
       handlers.s = () => review.decideTask('roll-over')
       handlers.d = () => review.decideTask('irrelevant')
       if (mode === 'today') handlers.f = () => review.decideTask('leave-open')
     }
   }
-  useHotkeys(handlers, !overlayOpen && !error)
+  useHotkeys(handlers, !overlayOpen && !locked)
 
   const header = (
     <div className="mb-4 flex items-center justify-between">
@@ -110,7 +149,15 @@ function ReviewSession({ mode }: { mode: ReviewMode }) {
     )
   }
 
-  if (!session) return null
+  // Between mount and the session being saved — or when saving it failed.
+  if (!session) {
+    return (
+      <>
+        {header}
+        {error ? <WriteErrorNotice onRetry={review.retry} /> : <EntryCardSkeleton />}
+      </>
+    )
+  }
 
   const processed = session.total - queueLength
 
@@ -132,17 +179,23 @@ function ReviewSession({ mode }: { mode: ReviewMode }) {
           </p>
           {step !== 'note' && (
             <DecisionBar
-              step={step}
+              step={showClassify ? 'classify' : 'task'}
               mode={mode}
-              onClassify={review.classify}
+              heading={retyping && step === 'task' ? 'Change type to…' : undefined}
+              disabled={locked}
+              onClassify={classify}
               onTask={review.decideTask}
             />
           )}
           <SessionToolbar
             canSkip={queueLength > 1}
             canUndo={review.canUndo}
+            undoLabel={review.undoLabel}
+            canChangeType={canChangeType}
+            disabled={locked}
             onSkip={review.skip}
             onUndo={review.undo}
+            onChangeType={() => setRetyping((value) => !value)}
             onDelete={() => setConfirming('delete')}
           />
         </>
@@ -158,11 +211,26 @@ function ReviewSession({ mode }: { mode: ReviewMode }) {
         />
       )}
 
-      {error && <WriteErrorNotice onRetry={review.retry} />}
+      {review.notice && (
+        <p role="status" className="mt-3 text-sm text-muted-foreground">
+          {review.notice}
+        </p>
+      )}
+
+      {/* While a note is being filed the error is shown inside the picker, which stays open. */}
+      {error && step !== 'note' && (
+        <WriteErrorNotice
+          onRetry={review.retry}
+          onDismiss={review.canDismissError ? review.dismissError : undefined}
+        />
+      )}
 
       <DestinationPicker
-        open={step === 'note' && confirming === null && !error}
+        open={step === 'note' && confirming === null}
         onPick={review.decideNote}
+        error={error !== null}
+        onRetry={review.retry}
+        onDismissError={review.canDismissError ? review.dismissError : undefined}
       />
 
       <ConfirmDialog

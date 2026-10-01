@@ -2,6 +2,7 @@ import { useId, useState, type KeyboardEvent, type ReactNode } from 'react'
 import { Button } from '@/components/ui/button'
 import { Kbd } from '@/shared/components/Kbd'
 import { ModalDialog } from '@/shared/components/ModalDialog'
+import { WriteErrorNotice } from '@/shared/components/WriteErrorNotice'
 import { formatAgo } from '@/shared/dates'
 import { useTreeSnapshot } from '@/modules/connection/hooks/use-tree-snapshot'
 import { searchDestinations } from '../lib/destinations'
@@ -10,15 +11,24 @@ import type { Destination } from '../types/destination'
 
 interface DestinationPickerProps {
   open: boolean
-  /** `null` keeps the note in its day. */
-  onPick: (destination: Destination | null) => void
+  /**
+   * `null` keeps the note in its day. Return `false` when saving the choice failed, so the
+   * destination is not remembered as "recent" and the picker can stay open.
+   */
+  onPick: (destination: Destination | null) => boolean | void
+  /** A failed write: shown inside the picker, which stays open */
+  error?: boolean
+  onRetry?: () => void
+  onDismissError?: () => void
 }
 
-export function DestinationPicker({ open, onPick }: DestinationPickerProps) {
+type PickerBodyProps = Pick<DestinationPickerProps, 'onPick' | 'error' | 'onRetry' | 'onDismissError'>
+
+export function DestinationPicker({ open, onPick, error, onRetry, onDismissError }: DestinationPickerProps) {
   return (
     <ModalDialog open={open} title="Where should this note live?" onCancel={() => onPick(null)}>
       {/* Mounted only while open, so the query and selection reset every time. */}
-      <PickerBody onPick={onPick} />
+      <PickerBody onPick={onPick} error={error} onRetry={onRetry} onDismissError={onDismissError} />
     </ModalDialog>
   )
 }
@@ -43,7 +53,7 @@ function Highlight({ text, query }: { text: string; query: string }): ReactNode 
   )
 }
 
-function PickerBody({ onPick }: Pick<DestinationPickerProps, 'onPick'>) {
+function PickerBody({ onPick, error, onRetry, onDismissError }: PickerBodyProps) {
   const listId = useId()
   const optionId = (index: number) => `${listId}-option-${index}`
   const { nodes, refreshedAt, refresh } = useTreeSnapshot()
@@ -62,8 +72,8 @@ function PickerBody({ onPick }: Pick<DestinationPickerProps, 'onPick'>) {
   const activeIndex = Math.min(active, Math.max(rows.length - 1, 0))
 
   const pick = (destination: Destination) => {
-    saved.markUsed(destination)
-    onPick(destination)
+    const ok = onPick(destination)
+    if (ok !== false) saved.markUsed(destination)
   }
 
   const onKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
@@ -184,6 +194,8 @@ function PickerBody({ onPick }: Pick<DestinationPickerProps, 'onPick'>) {
           Type to search. Places you pin or use will show up here.
         </p>
       )}
+
+      {error && onRetry && <WriteErrorNotice onRetry={onRetry} onDismiss={onDismissError} />}
 
       <div className="mt-4 flex items-center justify-between gap-2">
         <p className="text-xs text-muted-foreground">

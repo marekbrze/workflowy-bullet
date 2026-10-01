@@ -33,7 +33,9 @@ export interface ReviewSession extends BaseEntity {
   mode: ReviewMode
   /** Entry ids still to process; the first one is the current entry */
   queue: string[]
-  /** Queue length when the session started */
+  /** Queue length when the session started, plus entries added on later resumes */
   total: number
+  /** Every entry id that was ever queued, so a resume only adds genuinely new entries */
+  knownIds?: string[]
   decisions: Decision[]
 }

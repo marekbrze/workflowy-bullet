@@ -30,14 +30,16 @@ export function EntryCard({ entry, position, total, today }: EntryCardProps) {
         </span>
       </div>
 
-      <p className="mt-4 whitespace-pre-wrap text-xl leading-snug">{entry.text}</p>
+      <p className="mt-4 whitespace-pre-wrap break-words text-xl leading-snug">{entry.text}</p>
 
       {entry.children.length > 0 && (
         <details className="mt-4 text-sm">
           <summary className="cursor-pointer text-muted-foreground">{childLabel}</summary>
           <ul className="mt-2 list-disc space-y-1 pl-5">
-            {entry.children.map((child) => (
-              <li key={child}>{child}</li>
+            {entry.children.map((child, index) => (
+              <li key={index} className="break-words">
+                {child}
+              </li>
             ))}
           </ul>
         </details>

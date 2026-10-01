@@ -15,6 +15,7 @@ function make(date: string, text: string, extra: Partial<Entry> = {}): Entry {
     date,
     type: null,
     outcome: null,
+    completed: false,
     mirroredTo: null,
     ...extra,
   }
@@ -46,7 +47,9 @@ export function buildFullEntries(): Entry[] {
       { children: ['Ask about the weekly hours', 'Send the draft scope by Thursday'] },
     ),
     make(yesterday, 'Recipe: lentil soup — red lentils, carrot, cumin, lemon', { type: 'note' }),
-    make(yesterday, 'Water the plants', { type: 'task', outcome: 'done' }),
+    make(yesterday, 'Water the plants', { type: 'task', outcome: 'done', completed: true }),
+    // Completed in WorkFlowy but never typed: classifying it as a task makes it a done task.
+    make(yesterday, 'Pay the parking fine online', { completed: true }),
 
     // Today
     make(today, 'Prepare the agenda for Monday planning'),

@@ -44,7 +44,9 @@ A session is resumable. The user can stop at any point — even for days, even a
 - **Entry card**: the main screen. Large entry text in the centre; children collapsed/expandable below it; a small header with the day and progress ("3 of 12"); current type/tags as quiet chips. Decision controls are shown only for the current step (classify first, then task/note outcome). Each control shows its keyboard shortcut. Undo is always visible but visually quiet.
 - **Note destination picker**: opens over the card for a note (owned by `note-filing`).
 - **Delete confirmation**: a small confirm dialog stating that the deletion is permanent.
-- **Write error state**: the card stays in place, a plain-language message and a "Try again" button; nothing is treated as done until the write succeeds.
+- **Write error state**: the card stays in place and is locked, a plain-language message with "Try again" and "Dismiss"; nothing is treated as done until the write succeeds. For a note it appears inside the destination picker.
+- **Loading state**: a skeleton in the shape of the card.
+- **Unknown review**: a short "That review doesn't exist" message with a way back to Today.
 - **Session summary**: a calm end screen — the day is closed, how many entries were processed. No effects, no praise. One way out back to `days`.
 - **Resume prompt**: a short "Continue" entry into an active session (shown where the session was started from, in `days`).
 
@@ -54,7 +56,7 @@ A session is resumable. The user can stop at any point — even for days, even a
 |--------|------------|--------|-------|
 | Start / resume / end session | Open, continue at the first unprocessed entry, or finish a session | ReviewSession | Max one active per mode; ending discards undo history |
 | Skip to next entry | Send the current entry to the end of the queue | ReviewSession | Skipped entries return before the session can finish |
-| Classify entry / Change type | Set or correct the entry type; app writes the tag | Entry | Types set manually in WorkFlowy are respected |
+| Classify entry / Change type | Set or correct the entry type; app writes the tag. Change type is on the task card, key G | Entry | Types set manually in WorkFlowy are respected. A completed untyped entry classified as task becomes done |
 | Mark done | Complete the task | Entry | No extra tag |
 | Roll over to today / tomorrow | Complete the original + `#migrated`, create an independent copy in the target day node | Entry | `yesterday`/`backlog` → today; `today` → tomorrow |
 | Mark irrelevant | Complete the task + `#irrelevant` | Entry | |
@@ -71,7 +73,11 @@ A session is resumable. The user can stop at any point — even for days, even a
 - **Entry with many children**: the children are collapsed by default so the card stays calm; they expand on demand.
 - **Skipped entries**: always return at the end; the day stays open until they are decided.
 - **Undo after a roll-over**: the roll-over copy is deleted from the target day node and the original is uncompleted and untagged.
-- **Session left for days**: the queue may be stale (entries changed in WorkFlowy meanwhile) — to be examined in `proto-edgecases`.
+- **Session left for days**: on resume the session adds entries that arrived since it started (once per visit, to the end of the queue) and shows a one-line note such as "2 new entries added". Entries that were deleted or no longer need a decision (typed as an event, completed) are dropped from the queue, so the summary only appears when nothing is really left.
+- **A write fails** (also when LocalStorage is full or blocked): nothing is applied — a decision writes two keys and is rolled back if the second write fails. The card and its controls are locked, a plain message offers "Try again" and "Dismiss"; for a note the picker stays open with the same message. A destination is remembered as "recent" only after the mirror was saved.
+- **Completed but untyped entry**: classifying it as a task makes it a done task (never re-opened) and it leaves the queue.
+- **Change type**: on a task's card, "Change type" (key G) offers Task / Note / Event again; the change is undoable.
+- **Undo after a roll-over whose copy changed**: blocked with an explanation; the user undoes it from the copy's day.
 - **Invalid API key mid-session**: the session is interrupted by `connection` and can be resumed after fixing the key.
 
 ## Integration Points

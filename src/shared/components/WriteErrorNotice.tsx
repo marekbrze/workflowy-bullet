@@ -3,9 +3,11 @@ import { Button } from '@/components/ui/button'
 
 interface WriteErrorNoticeProps {
   onRetry: () => void
+  /** Gives up on the failed action. */
+  onDismiss?: () => void
 }
 
-export function WriteErrorNotice({ onRetry }: WriteErrorNoticeProps) {
+export function WriteErrorNotice({ onRetry, onDismiss }: WriteErrorNoticeProps) {
   const retryRef = useRef<HTMLButtonElement>(null)
   useEffect(() => {
     retryRef.current?.focus()
@@ -17,9 +19,16 @@ export function WriteErrorNotice({ onRetry }: WriteErrorNoticeProps) {
       <p className="mt-1 text-sm text-muted-foreground">
         Nothing was changed. Check your connection and try again.
       </p>
-      <Button ref={retryRef} className="mt-3" onClick={onRetry}>
-        Try again
-      </Button>
+      <div className="mt-3 flex gap-2">
+        <Button ref={retryRef} onClick={onRetry}>
+          Try again
+        </Button>
+        {onDismiss && (
+          <Button variant="ghost" onClick={onDismiss}>
+            Dismiss
+          </Button>
+        )}
+      </div>
     </div>
   )
 }

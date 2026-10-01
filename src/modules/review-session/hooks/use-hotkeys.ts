@@ -1,6 +1,16 @@
 import { useEffect, useRef } from 'react'
 
-/** Single-key shortcuts, keyed by lower-cased `KeyboardEvent.key`. Ignored while typing in a field. */
+/** The shortcut name for a key press: the physical letter key (layout-independent), or the key name. */
+function shortcutOf(event: KeyboardEvent): string {
+  if (event.code.startsWith('Key')) return event.code.slice(3).toLowerCase()
+  return event.key.toLowerCase()
+}
+
+/**
+ * Single-key shortcuts, keyed by lower-cased letter or key name ("a", "escape").
+ * Letters match the physical key, so home-row positions hold on Colemak or Dvorak too.
+ * Ignored while typing in a field.
+ */
 export function useHotkeys(handlers: Record<string, () => void>, enabled: boolean) {
   const latest = useRef(handlers)
   useEffect(() => {
@@ -13,7 +23,7 @@ export function useHotkeys(handlers: Record<string, () => void>, enabled: boolea
       if (event.metaKey || event.ctrlKey || event.altKey || event.repeat) return
       const target = event.target as HTMLElement | null
       if (target?.closest('input, textarea, select, [contenteditable="true"]')) return
-      const handler = latest.current[event.key.toLowerCase()]
+      const handler = latest.current[shortcutOf(event)]
       if (!handler) return
       event.preventDefault()
       handler()
