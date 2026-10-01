@@ -13,7 +13,7 @@ export function AppShell({ children }: AppShellProps) {
   const isFocusMode = pathname.startsWith(REVIEW_SESSION_PATH)
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    <div className="min-h-dvh bg-background text-foreground">
       <a
         href="#main"
         className="sr-only focus:not-sr-only focus:absolute focus:left-2 focus:top-2 focus:z-50 focus:rounded-md focus:bg-background focus:px-3 focus:py-2 focus:ring-2 focus:ring-ring"
@@ -37,7 +37,7 @@ function TopBar() {
   return (
     <header className="border-b">
       <div className="mx-auto flex h-12 w-full max-w-2xl items-center justify-between px-4">
-        <Link to="/" className="text-sm font-semibold">
+        <Link to="/" className="rounded-md text-sm font-semibold focus-ring">
           {APP_NAME}
         </Link>
         <nav aria-label="Main">
@@ -49,7 +49,7 @@ function TopBar() {
                   end={item.to === '/'}
                   className={({ isActive }) =>
                     cn(
-                      'rounded-md px-2.5 py-1.5 text-sm text-muted-foreground outline-none hover:bg-muted hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50',
+                      'rounded-md px-2.5 py-1.5 text-sm text-muted-foreground hover:bg-muted hover:text-foreground focus-ring',
                       isActive && 'bg-muted font-medium text-foreground',
                     )
                   }

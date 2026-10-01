@@ -10,7 +10,7 @@ export function SnapshotStatus() {
 
   return (
     <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-      <span>
+      <span className="tabular-nums">
         {!refreshedAt
           ? 'Tree not refreshed yet'
           : stale

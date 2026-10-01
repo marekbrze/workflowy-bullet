@@ -75,7 +75,7 @@ export function ConnectForm({
           disabled={busy}
           aria-invalid={shownError ? true : undefined}
           aria-describedby={shownError ? `${fieldId}-error` : undefined}
-          className="h-9 min-w-0 flex-1 rounded-lg border bg-background px-3 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:opacity-50"
+          className="h-9 min-w-0 flex-1 rounded-lg border border-input bg-background px-3 text-sm focus-ring disabled:opacity-50"
         />
         <Button
           type="button"

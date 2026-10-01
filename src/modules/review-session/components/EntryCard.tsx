@@ -21,16 +21,16 @@ export function EntryCard({ entry, position, total, today }: EntryCardProps) {
   return (
     <article
       aria-label="Entry under review"
-      className="rounded-xl border bg-card p-5 text-card-foreground"
+      className="animate-card-in rounded-xl border bg-card p-6 text-card-foreground"
     >
       <div className="flex items-center justify-between text-xs text-muted-foreground">
         <span>{formatDayLabel(entry.date, today)}</span>
-        <span>
+        <span className="tabular-nums">
           {position} of {total}
         </span>
       </div>
 
-      <p className="mt-4 whitespace-pre-wrap break-words text-xl leading-snug">{entry.text}</p>
+      <p className="mt-4 whitespace-pre-wrap break-words text-card">{entry.text}</p>
 
       {entry.children.length > 0 && (
         <details className="mt-4 text-sm">

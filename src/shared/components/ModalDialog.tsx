@@ -28,7 +28,7 @@ export function ModalDialog({ open, title, onCancel, children }: ModalDialogProp
         event.preventDefault()
         onCancel()
       }}
-      className="m-auto w-[min(28rem,calc(100vw-2rem))] rounded-xl border bg-background p-5 text-foreground backdrop:bg-black/40"
+      className="m-auto w-[min(28rem,calc(100vw-2rem))] rounded-xl border bg-popover p-6 text-foreground backdrop:bg-scrim"
     >
       {open && (
         <>

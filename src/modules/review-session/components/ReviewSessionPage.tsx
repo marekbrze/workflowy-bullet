@@ -168,6 +168,7 @@ function ReviewSession({ mode }: { mode: ReviewMode }) {
       {currentEntry && step ? (
         <>
           <EntryCard
+            key={currentEntry.id}
             entry={currentEntry}
             position={processed + 1}
             total={session.total}

@@ -207,7 +207,7 @@ function PickerBody({
           setNote(null)
         }}
         onKeyDown={onKeyDown}
-        className="mt-3 h-9 w-full rounded-lg border bg-background px-3 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+        className="mt-3 h-9 w-full rounded-lg border border-input bg-background px-3 text-sm focus-ring"
       />
       <p className="sr-only" aria-live="polite">
         {liveCount}
@@ -265,7 +265,7 @@ function PickerBody({
                     aria-pressed={pinned}
                     aria-label={`${pinned ? 'Unpin' : 'Pin'} ${destination.name}`}
                     onClick={() => saved.togglePin(destination)}
-                    className="rounded-md px-2 py-1 text-base text-muted-foreground outline-none hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/50"
+                    className="rounded-md px-2 py-1 text-base text-muted-foreground hover:bg-muted focus-ring"
                   >
                     {pinned ? '★' : '☆'}
                   </button>

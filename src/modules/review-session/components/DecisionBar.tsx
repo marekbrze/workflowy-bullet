@@ -60,6 +60,7 @@ export function DecisionBar({
             key={option.key}
             variant="outline"
             size="lg"
+            className="h-11 px-4 text-base"
             onClick={option.onSelect}
             disabled={disabled}
           >
