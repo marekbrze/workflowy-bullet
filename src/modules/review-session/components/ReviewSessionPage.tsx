@@ -3,7 +3,7 @@ import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { ConfirmDialog } from '@/shared/components/ConfirmDialog'
 import { Kbd } from '@/shared/components/Kbd'
-import { DestinationPickerStub } from '@/modules/note-filing/components/DestinationPickerStub'
+import { DestinationPicker } from '@/modules/note-filing/components/DestinationPicker'
 import { useHotkeys } from '../hooks/use-hotkeys'
 import { useReviewSession } from '../hooks/use-review-session'
 import { getStep } from '../lib/session-logic'
@@ -151,7 +151,7 @@ function ReviewSession({ mode }: { mode: ReviewMode }) {
 
       {error && <WriteErrorNotice onRetry={review.retry} />}
 
-      <DestinationPickerStub
+      <DestinationPicker
         open={step === 'note' && confirming === null && !error}
         onPick={review.decideNote}
       />
