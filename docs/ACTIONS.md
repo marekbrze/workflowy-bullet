@@ -37,7 +37,7 @@ Complete list of actions users can perform, organized by entity.
 | Start yesterday review | Start the morning review of yesterday | Owner | Mode `yesterday` |
 | Start backlog session | Start working through open past days, oldest first | Owner | Mode `backlog` |
 | Resume session | Continue an active session at the first unprocessed entry, even after days or app restarts | Owner | Max one active session per mode |
-| Skip to next entry | Move past the current entry without deciding | Owner | |
+| Skip to next entry | Send the current entry to the end of the queue without deciding | Owner | The entry returns after the rest; a day cannot close while a skipped entry is unprocessed |
 | End session | Finish the session; its undo history is discarded | Owner | |
 
 ### Entry
