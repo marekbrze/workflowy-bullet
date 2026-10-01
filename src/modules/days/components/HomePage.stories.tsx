@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
+import { buildConnection } from '@/modules/connection/mock/connection'
 import { MOCK_TREE, buildSnapshotMeta } from '@/modules/note-filing/mock/tree'
 import { buildQueue } from '@/modules/review-session/lib/session-logic'
 import { buildFullEntries, buildMinimalEntries } from '@/modules/review-session/mock/entries'
@@ -11,6 +12,7 @@ import { HomePage } from './HomePage'
 function seed(entries: Entry[], sessionMode?: ReviewMode) {
   const set = (key: string, value: unknown) => window.localStorage.setItem(key, JSON.stringify(value))
   set('entries', entries)
+  set('connection', buildConnection())
   set('tree-nodes', MOCK_TREE)
   set('tree-snapshot', buildSnapshotMeta())
   const sessions = []

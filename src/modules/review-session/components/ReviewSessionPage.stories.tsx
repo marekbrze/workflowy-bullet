@@ -1,10 +1,12 @@
 import type { Meta, StoryObj } from '@storybook/react'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
+import { buildConnection } from '@/modules/connection/mock/connection'
 import { buildFullEntries } from '../mock/entries'
 import { ReviewSessionPage } from './ReviewSessionPage'
 
 function seed(entries: unknown[]) {
   window.localStorage.setItem('entries', JSON.stringify(entries))
+  window.localStorage.setItem('connection', JSON.stringify(buildConnection()))
   window.localStorage.removeItem('review-sessions')
 }
 

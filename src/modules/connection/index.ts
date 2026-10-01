@@ -1,1 +1,1 @@
-export {}
+export { ConnectionPage } from './components/ConnectionPage'

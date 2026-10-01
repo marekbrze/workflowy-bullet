@@ -3,6 +3,8 @@ import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { ConfirmDialog } from '@/shared/components/ConfirmDialog'
 import { Kbd } from '@/shared/components/Kbd'
+import { InvalidKeyNotice } from '@/modules/connection/components/InvalidKeyNotice'
+import { useConnection } from '@/modules/connection/hooks/use-connection'
 import { DestinationPicker } from '@/modules/note-filing/components/DestinationPicker'
 import { useHotkeys } from '../hooks/use-hotkeys'
 import { useReviewSession } from '../hooks/use-review-session'
@@ -22,7 +24,14 @@ const MODE_LABELS: Record<ReviewMode, string> = {
 
 export function ReviewSessionPage() {
   const { mode } = useParams()
+  const navigate = useNavigate()
+  const connection = useConnection()
   if (!REVIEW_MODES.includes(mode as ReviewMode)) return <Navigate to="/" replace />
+  if (connection.status === 'disconnected') return <Navigate to="/" replace />
+  // The session itself stays stored; it resumes once the key works again.
+  if (connection.status === 'invalid') {
+    return <InvalidKeyNotice interruptedSession onChangeKey={() => navigate('/connection')} />
+  }
   return <ReviewSession mode={mode as ReviewMode} />
 }
 
