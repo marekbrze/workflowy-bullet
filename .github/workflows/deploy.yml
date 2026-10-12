@@ -68,18 +68,27 @@ jobs:
           CAPROVER_URL: ${{ secrets.CAPROVER_URL }}
           CAPROVER_APP_TOKEN: ${{ secrets.CAPROVER_APP_TOKEN }}
         run: |
-          set -o pipefail
+          # A pasted secret often carries a trailing newline, which makes the token invalid.
+          url=$(printf %s "$CAPROVER_URL" | tr -d '[:space:]')
+          token=$(printf %s "$CAPROVER_APP_TOKEN" | tr -d '[:space:]')
           # stdin from /dev/null: the CLI must never wait for an interactive prompt in CI.
           npx --yes caprover@2.4.4 deploy \
-            --caproverUrl "$CAPROVER_URL" \
-            --appToken "$CAPROVER_APP_TOKEN" \
+            --caproverUrl "$url" \
+            --appToken "$token" \
             --appName "$CAPROVER_APP" \
-            --imageName "$IMAGE" < /dev/null | tee deploy.log
+            --imageName "$IMAGE" < /dev/null 2>&1 | tee deploy.log || true
           # The CLI can exit 0 even when it bails out at a prompt, so require its success line.
-          if ! grep -q "using app token is in progress" deploy.log; then
-            echo "::error::CapRover did not accept the deployment (see the output above)"
-            exit 1
+          if grep -q "using app token is in progress" deploy.log; then
+            exit 0
           fi
+          # A rejected app token makes the CLI fall back to a password login, which on a
+          # server with 2FA ends in "Enter OTP token as well".
+          if grep -qi "OTP" deploy.log; then
+            echo "::error::CapRover rejected CAPROVER_APP_TOKEN for app '$CAPROVER_APP'. Check that the app exists under exactly this name, that the app token is enabled and saved (Deployment tab → Save & Restart) and that the secret holds that token."
+          else
+            echo "::error::CapRover did not accept the deployment (see the output above)"
+          fi
+          exit 1
 
       # With an app token CapRover returns before it has pulled and started the image, so
       # confirm the rollout by polling /version.txt until it serves this commit's SHA.
