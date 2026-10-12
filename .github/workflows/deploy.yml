@@ -14,34 +14,103 @@ env:
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
+    env:
+      IMAGE: rg.pl-waw.scw.cloud/marekbrze/img-workflowy-bullet:${{ github.sha }}
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v7
+
+      # Fail fast and loudly: an empty secret used to slip through as a silent, green no-op deploy.
+      - name: Check required secrets
+        env:
+          SCALEWAY_SECRET_KEY: ${{ secrets.SCALEWAY_SECRET_KEY }}
+          CAPROVER_URL: ${{ secrets.CAPROVER_URL }}
+          CAPROVER_APP_TOKEN: ${{ secrets.CAPROVER_APP_TOKEN }}
+        run: |
+          missing=0
+          for name in SCALEWAY_SECRET_KEY CAPROVER_URL CAPROVER_APP_TOKEN; do
+            if [ -z "${!name}" ]; then
+              echo "::error::Repository secret $name is missing or empty"
+              missing=1
+            fi
+          done
+          exit $missing
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@v4
 
       - name: Log in to Scaleway Container Registry
-        uses: docker/login-action@v3
+        uses: docker/login-action@v4
         with:
           registry: ${{ env.SCW_REGISTRY }}
           username: nologin
           password: ${{ secrets.SCALEWAY_SECRET_KEY }}
 
       - name: Build and push image
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           context: .
           push: true
-          tags: ${{ env.SCW_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+          tags: ${{ env.IMAGE }}
+          build-args: GIT_SHA=${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
-          progress: plain
+
+      # The CapRover CLI runs directly on a current Node (it needs >= 20). The
+      # caprover/deploy-from-github action ran it on Node 16 and exited 0 on failure.
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
 
       - name: Deploy to CapRover
-        uses: caprover/deploy-from-github@v1.1.2
-        with:
-          server: ${{ secrets.CAPROVER_SERVER }}
-          app: ${{ env.CAPROVER_APP }}
-          token: ${{ secrets.CAPROVER_APP_TOKEN }}
-          image: ${{ env.SCW_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+        env:
+          CAPROVER_URL: ${{ secrets.CAPROVER_URL }}
+          CAPROVER_APP_TOKEN: ${{ secrets.CAPROVER_APP_TOKEN }}
+        run: |
+          set -o pipefail
+          # stdin from /dev/null: the CLI must never wait for an interactive prompt in CI.
+          npx --yes caprover@2.4.4 deploy \
+            --caproverUrl "$CAPROVER_URL" \
+            --appToken "$CAPROVER_APP_TOKEN" \
+            --appName "$CAPROVER_APP" \
+            --imageName "$IMAGE" < /dev/null | tee deploy.log
+          # The CLI can exit 0 even when it bails out at a prompt, so require its success line.
+          if ! grep -q "using app token is in progress" deploy.log; then
+            echo "::error::CapRover did not accept the deployment (see the output above)"
+            exit 1
+          fi
+
+      # With an app token CapRover returns before it has pulled and started the image, so
+      # confirm the rollout by polling /version.txt until it serves this commit's SHA.
+      - name: Verify the new version is live
+        env:
+          CAPROVER_URL: ${{ secrets.CAPROVER_URL }}
+          APP_URL: ${{ vars.APP_URL }}
+          APP_BASIC_AUTH: ${{ secrets.APP_BASIC_AUTH }}
+        run: |
+          # Default app URL follows CapRover's convention: captain.<root> → <app>.<root>.
+          url="${APP_URL:-$(echo "$CAPROVER_URL" | sed -E "s#//captain\.#//$CAPROVER_APP.#")}"
+          url="${url%/}/version.txt"
+          auth=()
+          if [ -n "$APP_BASIC_AUTH" ]; then auth=(--user "$APP_BASIC_AUTH"); fi
+          echo "Polling $url for ${GITHUB_SHA}"
+
+          for attempt in $(seq 1 30); do
+            body=$(curl -sS -L --max-time 10 "${auth[@]}" -w '\n%{http_code}' "$url" || echo $'\n000')
+            code=$(tail -n1 <<<"$body")
+            served=$(head -n1 <<<"$body" | tr -d '[:space:]')
+            if [ "$code" = 200 ] && [ "$served" = "$GITHUB_SHA" ]; then
+              echo "Live: $url serves $served"
+              exit 0
+            fi
+            if [ "$code" = 401 ] && [ -z "$APP_BASIC_AUTH" ]; then
+              echo "::warning::The app is up but behind Basic Auth, so the running version was not checked. Add an APP_BASIC_AUTH secret (user:password) to verify rollouts."
+              exit 0
+            fi
+            echo "Attempt $attempt: HTTP $code, serving '${served:0:40}' — waiting"
+            sleep 10
+          done
+
+          echo "::error::$url did not serve $GITHUB_SHA within 5 minutes. Check the app's deployment log in CapRover (an image pull failure from the private Scaleway registry is the usual cause)."
+          exit 1

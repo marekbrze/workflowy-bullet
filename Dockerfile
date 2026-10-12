@@ -16,7 +16,9 @@ RUN --mount=type=cache,target=/root/.npm npm ci
 
 COPY . .
 # `npm run build` = `tsc && vite build` → static output in dist/
-RUN npm run build
+# version.txt carries the commit SHA so the deploy workflow can confirm the new image is live.
+ARG GIT_SHA=dev
+RUN npm run build && echo "$GIT_SHA" > dist/version.txt
 
 # ==================================================================
 # Runtime stage — nginx serves dist/ with SPA history fallback and
