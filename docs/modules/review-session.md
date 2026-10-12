@@ -10,7 +10,7 @@ A session is resumable. The user can stop at any point — even for days, even a
 ### Process a session (all modes)
 1. User starts or resumes a session from `days` (Today list, yesterday review, or Backlog) → sees the first unprocessed entry as a card.
 2. The card shows the entry text, its children (content that travels with it), the day it belongs to, a progress counter, and its current type/tags if it has any.
-3. If the entry is untyped, the user classifies it (task / note / event) with a key. The tag is written to WorkFlowy.
+3. If the entry is untyped, the user classifies it (task / note that stays in its day / note to migrate / event / archive) with a key. The tag is written to WorkFlowy.
 4. Depending on the type:
    - **Task** → done / roll over / irrelevant (+ leave open in `today` mode).
    - **Note** → keep in day, or open `note-filing` to mirror it to a destination.
@@ -56,7 +56,7 @@ A session is resumable. The user can stop at any point — even for days, even a
 |--------|------------|--------|-------|
 | Start / resume / end session | Open, continue at the first unprocessed entry, or finish a session | ReviewSession | Max one active per mode; ending discards undo history |
 | Skip to next entry | Send the current entry to the end of the queue | ReviewSession | Skipped entries return before the session can finish |
-| Classify entry / Change type | Set or correct the entry type; app writes the tag. Change type is on the task card, key G | Entry | Types set manually in WorkFlowy are respected. A completed untyped entry classified as task becomes done |
+| Classify entry / Change type | Set or correct the entry type; app writes the tag. Change type is on the task card, key S | Entry | Types set manually in WorkFlowy are respected. A completed untyped entry classified as task becomes done |
 | Mark done | Complete the task | Entry | No extra tag |
 | Roll over to today / tomorrow | Complete the original + `#migrated`, create an independent copy in the target day node | Entry | `yesterday`/`backlog` → today; `today` → tomorrow |
 | Mark irrelevant | Complete the task + `#irrelevant` | Entry | |
@@ -76,7 +76,8 @@ A session is resumable. The user can stop at any point — even for days, even a
 - **Session left for days**: on resume the session adds entries that arrived since it started (once per visit, to the end of the queue) and shows a one-line note such as "2 new entries added". Entries that were deleted or no longer need a decision (typed as an event, completed) are dropped from the queue, so the summary only appears when nothing is really left.
 - **A write fails** (also when LocalStorage is full or blocked): nothing is applied — a decision writes two keys and is rolled back if the second write fails. The card and its controls are locked, a plain message offers "Try again" and "Dismiss"; for a note the picker stays open with the same message. A destination is remembered as "recent" only after the mirror was saved.
 - **Completed but untyped entry**: classifying it as a task makes it a done task (never re-opened) and it leaves the queue.
-- **Change type**: on a task's card, "Change type" (key G) offers Task / Note / Event again; the change is undoable.
+- **Change type**: on a task's card, "Change type" (key S) offers the classify options again; the change is undoable.
+- **Shortcuts**: decisions are under the right hand — classify: J Task, K Note (stays in its day, no picker), L Note → migrate (opens the destination picker), ; Event, ' Archive; a task: J Done, K Roll over, L Irrelevant, ; Leave open. The toolbar is under the left hand: A Delete, S Change type, D Undo, F Skip. Keys match the physical position, whatever the layout.
 - **Undo after a roll-over whose copy changed**: blocked with an explanation; the user undoes it from the copy's day.
 - **Invalid API key mid-session**: the session is interrupted by `connection` and can be resumed after fixing the key.
 

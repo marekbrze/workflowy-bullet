@@ -6,7 +6,7 @@ import { AuthError, reportAuthFailure } from '@/modules/connection/lib/auth'
 import { CopyTooLargeError, getBackend, type Backend } from '@/modules/connection/lib/backend'
 import type { Destination } from '@/modules/note-filing/types/destination'
 import type { Entry, EntryType } from '../types/entry'
-import type { ReviewMode, ReviewSession } from '../types/session'
+import type { ClassifyChoice, ReviewMode, ReviewSession } from '../types/session'
 import {
   buildQueue,
   canGoBackToClassify,
@@ -223,12 +223,18 @@ export function useReviewSession(mode: ReviewMode) {
     start,
     addNewEntries,
     /** `wrapperName` names a code block, which is never tagged itself. */
-    classify: (type: EntryType, wrapperName?: string) => {
+    classify: (choice: ClassifyChoice, wrapperName?: string) => {
       const entry = currentEntry
       if (!entry) return Promise.resolve(false)
+      const type: EntryType = choice === 'note-in-day' ? 'note' : choice
       return act({
         remote: (backend) => remoteClassify(backend, entry, type, wrapperName),
-        apply: (s, result) => classify(s, entry.id, type, now(), wrapperName, result.codeChildId),
+        apply: (s, result) =>
+          classify(s, entry.id, type, now(), {
+            wrapperName,
+            codeChildId: result.codeChildId,
+            keepInDay: choice === 'note-in-day',
+          }),
       })
     },
     decideTask: (kind: TaskDecision) => {

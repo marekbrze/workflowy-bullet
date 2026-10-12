@@ -1,13 +1,12 @@
 import { Button } from '@/components/ui/button'
 import { Kbd } from '@/shared/components/Kbd'
-import type { EntryType } from '../types/entry'
-import type { ReviewMode } from '../types/session'
+import type { ClassifyChoice, ReviewMode } from '../types/session'
 import type { TaskDecision } from '../lib/session-logic'
 
 interface DecisionBarProps {
   step: 'classify' | 'task'
   mode: ReviewMode
-  onClassify: (type: EntryType) => void
+  onClassify: (choice: ClassifyChoice) => void
   onTask: (decision: TaskDecision) => void
   /** Replaces the default question, e.g. when correcting a type */
   heading?: string
@@ -20,7 +19,8 @@ interface Option {
   onSelect: () => void
 }
 
-// Positional home-row keys: the first option is always A, then S, D, F.
+// Positional right-hand home-row keys: the first option is always J, then K, L, ; and '.
+// (The left hand's A S D F are for the toolbar.)
 export function DecisionBar({
   step,
   mode,
@@ -32,21 +32,22 @@ export function DecisionBar({
   const options: Option[] =
     step === 'classify'
       ? [
-          { key: 'a', label: 'Task', onSelect: () => onClassify('task') },
-          { key: 's', label: 'Note', onSelect: () => onClassify('note') },
-          { key: 'd', label: 'Event', onSelect: () => onClassify('event') },
-          { key: 'f', label: 'Archive', onSelect: () => onClassify('archive') },
+          { key: 'j', label: 'Task', onSelect: () => onClassify('task') },
+          { key: 'k', label: 'Note', onSelect: () => onClassify('note-in-day') },
+          { key: 'l', label: 'Note → migrate', onSelect: () => onClassify('note') },
+          { key: ';', label: 'Event', onSelect: () => onClassify('event') },
+          { key: "'", label: 'Archive', onSelect: () => onClassify('archive') },
         ]
       : [
-          { key: 'a', label: 'Done', onSelect: () => onTask('done') },
+          { key: 'j', label: 'Done', onSelect: () => onTask('done') },
           {
-            key: 's',
+            key: 'k',
             label: mode === 'today' ? 'Roll over to tomorrow' : 'Roll over to today',
             onSelect: () => onTask('roll-over'),
           },
-          { key: 'd', label: 'Irrelevant', onSelect: () => onTask('irrelevant') },
+          { key: 'l', label: 'Irrelevant', onSelect: () => onTask('irrelevant') },
           ...(mode === 'today'
-            ? [{ key: 'f', label: 'Leave open', onSelect: () => onTask('leave-open') }]
+            ? [{ key: ';', label: 'Leave open', onSelect: () => onTask('leave-open') }]
             : []),
         ]
 

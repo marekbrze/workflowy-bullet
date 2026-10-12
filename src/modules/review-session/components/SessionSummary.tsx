@@ -28,8 +28,8 @@ export function SessionSummary({ processed, canUndo, onUndo, onDone }: SessionSu
         <Button ref={doneRef} onClick={onDone}>
           Done
         </Button>
-        <Button variant="ghost" onClick={onUndo} disabled={!canUndo} aria-keyshortcuts="k">
-          Undo <Kbd>k</Kbd>
+        <Button variant="ghost" onClick={onUndo} disabled={!canUndo} aria-keyshortcuts="d">
+          Undo <Kbd>d</Kbd>
         </Button>
       </div>
     </section>

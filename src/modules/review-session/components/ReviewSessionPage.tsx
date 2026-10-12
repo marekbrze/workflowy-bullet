@@ -11,8 +11,7 @@ import { DestinationPicker } from '@/modules/note-filing/components/DestinationP
 import { useHotkeys } from '../hooks/use-hotkeys'
 import { useReviewSession } from '../hooks/use-review-session'
 import { getStep } from '../lib/session-logic'
-import type { EntryType } from '../types/entry'
-import { REVIEW_MODES, type ReviewMode } from '../types/session'
+import { REVIEW_MODES, type ClassifyChoice, type ReviewMode } from '../types/session'
 import { CodeBlockNameDialog } from './CodeBlockNameDialog'
 import { DecisionBar } from './DecisionBar'
 import { EntryCard } from './EntryCard'
@@ -61,7 +60,7 @@ function ReviewSession({ mode }: { mode: ReviewMode }) {
   const [confirming, setConfirming] = useState<'delete' | 'end' | null>(null)
   const [retyping, setRetyping] = useState(false)
   // A code block is named before it is typed: the type waits here meanwhile.
-  const [naming, setNaming] = useState<EntryType | null>(null)
+  const [naming, setNaming] = useState<ClassifyChoice | null>(null)
 
   const { session, currentEntry, error, start, candidateCount } = review
 
@@ -87,33 +86,35 @@ function ReviewSession({ mode }: { mode: ReviewMode }) {
   const canChangeType = step === 'task'
   const showClassify = step === 'classify' || (canChangeType && retyping)
 
-  const classify = (type: EntryType) => {
+  const classify = (choice: ClassifyChoice) => {
     if (retyping) {
       setRetyping(false)
-      if (currentEntry?.type === type) return
+      if (currentEntry?.type === choice) return
     }
-    if (currentEntry?.codeBlock) setNaming(type)
-    else review.classify(type)
+    if (currentEntry?.codeBlock) setNaming(choice)
+    else review.classify(choice)
   }
 
+  // Decisions sit under the right hand (J K L ; '), the toolbar under the left (A S D F).
   const handlers: Record<string, () => void> = {
     escape: () => (retyping ? setRetyping(false) : exit()),
-    k: review.undo,
+    d: review.undo,
   }
   if (currentEntry) {
-    handlers.j = review.skip
-    handlers.l = () => setConfirming('delete')
-    if (canChangeType) handlers.g = () => setRetyping((value) => !value)
+    handlers.f = review.skip
+    handlers.a = () => setConfirming('delete')
+    if (canChangeType) handlers.s = () => setRetyping((value) => !value)
     if (showClassify) {
-      handlers.a = () => classify('task')
-      handlers.s = () => classify('note')
-      handlers.d = () => classify('event')
-      handlers.f = () => classify('archive')
+      handlers.j = () => classify('task')
+      handlers.k = () => classify('note-in-day')
+      handlers.l = () => classify('note')
+      handlers[';'] = () => classify('event')
+      handlers["'"] = () => classify('archive')
     } else if (step === 'task') {
-      handlers.a = () => review.decideTask('done')
-      handlers.s = () => review.decideTask('roll-over')
-      handlers.d = () => review.decideTask('irrelevant')
-      if (mode === 'today') handlers.f = () => review.decideTask('leave-open')
+      handlers.j = () => review.decideTask('done')
+      handlers.k = () => review.decideTask('roll-over')
+      handlers.l = () => review.decideTask('irrelevant')
+      if (mode === 'today') handlers[';'] = () => review.decideTask('leave-open')
     }
   }
   useHotkeys(handlers, !overlayOpen && !locked)
@@ -246,12 +247,12 @@ function ReviewSession({ mode }: { mode: ReviewMode }) {
       />
 
       <CodeBlockNameDialog
-        type={naming}
+        type={naming === 'note-in-day' ? 'note' : naming}
         busy={review.pending}
         onSubmit={async (name) => {
-          const type = naming
+          const choice = naming
           setNaming(null)
-          if (type) await review.classify(type, name)
+          if (choice) await review.classify(choice, name)
         }}
         onCancel={() => setNaming(null)}
       />

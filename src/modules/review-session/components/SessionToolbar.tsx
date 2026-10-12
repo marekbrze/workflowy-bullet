@@ -29,27 +29,28 @@ export function SessionToolbar({
 }: SessionToolbarProps) {
   return (
     <div className="mt-6 flex items-center gap-1 border-t pt-3">
-      <Button variant="ghost" size="sm" onClick={onSkip} disabled={disabled || !canSkip} aria-keyshortcuts="j">
-        Skip <Kbd>j</Kbd>
+      <Button variant="ghost" size="sm" onClick={onDelete} disabled={disabled} aria-keyshortcuts="a">
+        Delete <Kbd>a</Kbd>
       </Button>
+      {canChangeType && (
+        <Button variant="ghost" size="sm" onClick={onChangeType} disabled={disabled} aria-keyshortcuts="s">
+          Change type <Kbd>s</Kbd>
+        </Button>
+      )}
       <Button
         variant="ghost"
         size="sm"
+        className="ml-auto"
         onClick={onUndo}
         disabled={disabled || !canUndo}
         title={undoLabel ? `Undo: ${undoLabel}` : undefined}
         aria-label={undoLabel ? `Undo: ${undoLabel}` : 'Undo'}
-        aria-keyshortcuts="k"
+        aria-keyshortcuts="d"
       >
-        Undo <Kbd>k</Kbd>
+        Undo <Kbd>d</Kbd>
       </Button>
-      {canChangeType && (
-        <Button variant="ghost" size="sm" onClick={onChangeType} disabled={disabled} aria-keyshortcuts="g">
-          Change type <Kbd>g</Kbd>
-        </Button>
-      )}
-      <Button variant="ghost" size="sm" className="ml-auto" onClick={onDelete} disabled={disabled} aria-keyshortcuts="l">
-        Delete <Kbd>l</Kbd>
+      <Button variant="ghost" size="sm" onClick={onSkip} disabled={disabled || !canSkip} aria-keyshortcuts="f">
+        Skip <Kbd>f</Kbd>
       </Button>
     </div>
   )

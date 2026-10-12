@@ -1,9 +1,12 @@
 import { useEffect, useRef } from 'react'
 
-/** The shortcut name for a key press: the physical letter key (layout-independent), or the key name. */
+// The keys right of L, by position (what they print depends on the layout).
+const PUNCTUATION_KEYS: Record<string, string> = { Semicolon: ';', Quote: "'" }
+
+/** The shortcut name for a key press: the physical key (layout-independent), or the key name. */
 function shortcutOf(event: KeyboardEvent): string {
   if (event.code.startsWith('Key')) return event.code.slice(3).toLowerCase()
-  return event.key.toLowerCase()
+  return PUNCTUATION_KEYS[event.code] ?? event.key.toLowerCase()
 }
 
 /**

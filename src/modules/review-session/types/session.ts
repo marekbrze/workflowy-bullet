@@ -5,6 +5,9 @@ export type ReviewMode = 'today' | 'yesterday' | 'backlog'
 
 export const REVIEW_MODES: ReviewMode[] = ['today', 'yesterday', 'backlog']
 
+/** A classify option: a type, or a note that stays in its day without being filed (no picker). */
+export type ClassifyChoice = EntryType | 'note-in-day'
+
 export type DecisionKind =
   | 'classify'
   | 'done'

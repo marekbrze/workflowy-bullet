@@ -24,6 +24,7 @@ export function formatDayLabel(iso: string, today: string = todayISO()): string 
     weekday: 'short',
     day: 'numeric',
     month: 'short',
+    year: 'numeric',
   })
 }
 

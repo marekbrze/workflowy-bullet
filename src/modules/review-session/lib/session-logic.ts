@@ -182,17 +182,23 @@ export function classify(
   entryId: string,
   type: EntryType,
   now: string,
-  /** For a code block: the name of the text bullet it becomes */
-  wrapperName?: string,
-  /** The code block WorkFlowy created for it */
-  codeChildId?: string,
+  options: {
+    /** For a code block: the name of the text bullet it becomes */
+    wrapperName?: string
+    /** The code block WorkFlowy created for it */
+    codeChildId?: string
+    /** A note that stays in its day: no destination is asked for */
+    keepInDay?: boolean
+  } = {},
 ): SessionState {
+  const { wrapperName, codeChildId, keepInDay } = options
   const before = findEntry(state.entries, entryId)
+  // A task still needs its fate and a note to file still needs a destination; anything else is
+  // done here, and so is a completed task — `reconcileQueue` drops it.
+  const settled = type === 'event' || type === 'archive' || (type === 'note' && keepInDay)
   return {
     entries: state.entries.map((e) => (e.id === entryId ? typeEntry(e, type, now, wrapperName) : e)),
-    // A task still needs its fate and a note still needs a destination; an event or archive item
-    // is done, and so is a completed task — `reconcileQueue` drops them.
-    queue: type === 'event' || type === 'archive' ? without(state.queue, entryId) : state.queue,
+    queue: settled ? without(state.queue, entryId) : state.queue,
     decisions: [...state.decisions, decision('classify', before, now, { toType: type, codeChildId })],
   }
 }
