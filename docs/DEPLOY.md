@@ -4,14 +4,14 @@ The app is a static SPA served by nginx **plus** a same-origin proxy to the Work
 
 ## One-time setup
 
-1. **CapRover**: create an app named exactly `workflowy-bullet` (the name is `CAPROVER_APP` in the workflow). Enable HTTPS and *Force HTTPS*. Under *HTTP Settings* enable **Basic Auth** — the container is deliberately open and access control is CapRover's job, as in the other apps. Under *Deployment* enable the **app token**.
+1. **CapRover**: create an app named exactly `workflowy` (the name is `CAPROVER_APP` in the workflow). Enable HTTPS and *Force HTTPS*. Under *HTTP Settings* enable **Basic Auth** — the container is deliberately open and access control is CapRover's job, as in the other apps. Under *Deployment* enable the **app token**.
 2. **CapRover registry access**: the image is private, so CapRover needs the Scaleway registry under *Cluster → Docker Registry Configuration* (`rg.pl-waw.scw.cloud`, user `nologin`, password = Scaleway secret key). Without it the deploy is accepted but the image pull fails.
 3. **GitHub repository secrets** (Settings → Secrets and variables → Actions):
    - `SCALEWAY_SECRET_KEY` — Scaleway API secret key (registry `rg.pl-waw.scw.cloud/marekbrze`)
    - `CAPROVER_URL` — the CapRover URL, e.g. `https://captain.example.com`
    - `CAPROVER_APP_TOKEN` — the app token from step 1
    - `APP_BASIC_AUTH` *(optional)* — `user:password` of the app's Basic Auth, so the workflow can confirm the new version is live. Without it the check only confirms the app answers.
-   - Variable `APP_URL` *(optional)* — the app's public URL if it is not `https://workflowy-bullet.<captain root domain>`.
+   - Variable `APP_URL` *(optional)* — the app's public URL if it is not `https://workflowy.<captain root domain>`.
 4. Push to `main`. The workflow checks the secrets, builds `img-workflowy-bullet:<sha>` (with the SHA in `/version.txt`), pushes it to Scaleway, tells CapRover to deploy it and polls `/version.txt` until it serves the new SHA. Any failed step turns the run red.
 
 No WorkFlowy secret goes to the server: the user pastes their API key into the app and it stays in their own browser.

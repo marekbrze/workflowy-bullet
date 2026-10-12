@@ -9,7 +9,7 @@ env:
   SCW_REGISTRY: rg.pl-waw.scw.cloud/marekbrze
   IMAGE_NAME: img-workflowy-bullet
   # Must match the CapRover app name exactly.
-  CAPROVER_APP: workflowy-bullet
+  CAPROVER_APP: workflowy
 
 jobs:
   build-and-deploy:
