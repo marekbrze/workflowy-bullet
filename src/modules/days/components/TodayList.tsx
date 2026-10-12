@@ -140,7 +140,7 @@ export function TodayList({
           {visible.map((entry) => (
             <li key={entry.id} className="flex flex-wrap items-center justify-between gap-2 px-3 py-2">
               {entry.codeBlock ? (
-                <pre className="min-w-0 flex-1 overflow-x-auto whitespace-pre rounded-md bg-muted px-2 py-1 font-mono text-sm">
+                <pre className="min-w-0 flex-1 whitespace-pre-wrap break-words rounded-md bg-muted px-2 py-1 font-mono text-sm">
                   <code>{entry.text}</code>
                 </pre>
               ) : (

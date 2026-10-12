@@ -31,7 +31,7 @@ export function EntryCard({ entry, position, total, today }: EntryCardProps) {
       </div>
 
       {entry.codeBlock ? (
-        <pre className="mt-4 overflow-x-auto whitespace-pre rounded-lg border bg-muted p-4 font-mono text-base">
+        <pre className="mt-4 whitespace-pre-wrap break-words rounded-lg border bg-muted p-4 font-mono text-base">
           <code>{entry.text}</code>
         </pre>
       ) : (
