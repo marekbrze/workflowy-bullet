@@ -35,11 +35,17 @@ export interface PurgeResult {
 }
 
 /** Permanently deletes every `#archive` bullet (with what is under it) from WorkFlowy. */
-export async function purgeArchive(index: TreeIndex, backend: Backend = getBackend()): Promise<PurgeResult> {
+export async function purgeArchive(
+  index: TreeIndex,
+  backend: Backend = getBackend(),
+  /** Called before each deletion: how many are done so far, how many there are, and what is next. */
+  onProgress?: (done: number, total: number, current: WorkflowyNode) => void,
+): Promise<PurgeResult> {
   const targets = findArchived(index)
   let deleted = 0
   let failed = 0
-  for (const node of targets) {
+  for (const [position, node] of targets.entries()) {
+    onProgress?.(position, targets.length, node)
     try {
       await backend.deleteNode(node.id)
       deleted++
