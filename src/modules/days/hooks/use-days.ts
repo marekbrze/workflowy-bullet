@@ -1,3 +1,4 @@
+import { ApiError } from '@/modules/connection/lib/workflowy-api'
 import { useEffect, useRef, useState } from 'react'
 import { useLocalStorage } from '@/shared/hooks/use-local-storage'
 import { useToday } from '@/shared/hooks/use-today'
@@ -42,6 +43,7 @@ export function useDays() {
     } catch (e) {
       // The key stopped working: the connection flow takes over. Anything else is shown here.
       if (e instanceof AuthError) reportAuthFailure()
+      else if (e instanceof ApiError) setError(`That didn't reach WorkFlowy (${e.message}). Nothing was changed.`)
       else setError("That didn't reach WorkFlowy. Nothing was changed.")
       return false
     } finally {

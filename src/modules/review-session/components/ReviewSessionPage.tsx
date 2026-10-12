@@ -242,6 +242,7 @@ function ReviewSession({ mode }: { mode: ReviewMode }) {
         excludeIds={currentEntry ? [currentEntry.id] : undefined}
         onBack={review.canGoBack ? review.undo : undefined}
         error={error !== null}
+        errorDetail={review.errorDetail}
         onRetry={review.retry}
         onDismissError={review.canDismissError ? review.dismissError : undefined}
       />

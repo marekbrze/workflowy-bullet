@@ -3,6 +3,7 @@ import { useLocalStorage } from '@/shared/hooks/use-local-storage'
 import { generateId } from '@/shared/types'
 import { useToday } from '@/shared/hooks/use-today'
 import { AuthError, reportAuthFailure } from '@/modules/connection/lib/auth'
+import { ApiError } from '@/modules/connection/lib/workflowy-api'
 import { CopyTooLargeError, getBackend, type Backend } from '@/modules/connection/lib/backend'
 import type { Destination } from '@/modules/note-filing/types/destination'
 import type { Entry, EntryType } from '../types/entry'
@@ -165,7 +166,8 @@ export function useReviewSession(mode: ReviewMode) {
         }
         setError(e instanceof Error ? e.message : 'Unknown error')
         // Most failures read the same ("it didn't reach WorkFlowy"); a few have their own advice.
-        setErrorDetail(e instanceof CopyTooLargeError ? e.message : null)
+        // A reply from WorkFlowy (e.g. "404: not found") says more than "check your connection".
+        setErrorDetail(e instanceof CopyTooLargeError || e instanceof ApiError ? e.message : null)
         return false
       }
     }

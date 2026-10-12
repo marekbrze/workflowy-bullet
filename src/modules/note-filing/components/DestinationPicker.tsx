@@ -36,6 +36,8 @@ interface DestinationPickerProps {
   onBack?: () => void
   /** A failed write: shown inside the picker, which stays open */
   error?: boolean
+  /** Why the write failed, when WorkFlowy said */
+  errorDetail?: string | null
   onRetry?: () => void
   onDismissError?: () => void
 }
@@ -87,6 +89,7 @@ function PickerBody({
   error,
   onRetry,
   onDismissError,
+  errorDetail,
 }: PickerBodyProps) {
   const listId = useId()
   const optionId = (index: number) => `${listId}-option-${index}`
@@ -361,7 +364,7 @@ function PickerBody({
         </p>
       )}
 
-      {error && onRetry && <WriteErrorNotice onRetry={onRetry} onDismiss={onDismissError} />}
+      {error && onRetry && <WriteErrorNotice onRetry={onRetry} onDismiss={onDismissError} detail={errorDetail} />}
 
       <div className="mt-4 flex items-center justify-between gap-2">
         <p className="text-sm text-muted-foreground">
