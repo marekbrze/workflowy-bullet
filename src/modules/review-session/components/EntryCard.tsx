@@ -30,7 +30,13 @@ export function EntryCard({ entry, position, total, today }: EntryCardProps) {
         </span>
       </div>
 
-      <p className="mt-4 whitespace-pre-wrap break-words text-entry">{entry.text}</p>
+      {entry.codeBlock ? (
+        <pre className="mt-4 overflow-x-auto whitespace-pre rounded-lg border bg-muted p-4 font-mono text-base">
+          <code>{entry.text}</code>
+        </pre>
+      ) : (
+        <p className="mt-4 whitespace-pre-wrap break-words text-entry">{entry.text}</p>
+      )}
 
       {entry.children.length > 0 && (
         <details open className="mt-4 text-sm">
