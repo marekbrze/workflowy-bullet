@@ -1,9 +1,10 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { ConfirmDialog } from '@/shared/components/ConfirmDialog'
 import { formatAgo } from '@/shared/dates'
 import { useTransitionFocus } from '@/shared/hooks/use-transition-focus'
 import { maskKey } from '../lib/connection'
+import { refreshLive } from '../lib/refresh'
 import type { Connection } from '../hooks/use-connection'
 import { ConnectForm } from './ConnectForm'
 import { SnapshotStatus } from './SnapshotStatus'
@@ -27,6 +28,12 @@ export function ConnectionSettings({ connection, onDisconnected }: ConnectionSet
   const [switchError, setSwitchError] = useState<string | null>(null)
   // After saving a key the form disappears: put focus on the heading instead of losing it.
   const headingRef = useTransitionFocus<HTMLHeadingElement>(!changing)
+
+  // Opening this screen is a moment to be sure of the tree (e.g. before deleting archived items).
+  const connected = connection.status === 'connected'
+  useEffect(() => {
+    if (connected) void refreshLive()
+  }, [connected])
 
   const switchAccount = async () => {
     if (pendingKey === null || switching) return

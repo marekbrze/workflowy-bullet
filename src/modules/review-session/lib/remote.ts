@@ -4,6 +4,7 @@ import type { Entry, EntryType } from '../types/entry'
 import type { Destination } from '@/modules/note-filing/types/destination'
 import type { Backend } from '@/modules/connection/lib/backend'
 import { saveMirror } from '@/modules/connection/lib/mirrors'
+import { refreshLive } from '@/modules/connection/lib/refresh'
 import { rollOverTarget, type TaskDecision } from './session-logic'
 
 /** Ids WorkFlowy handed out while the decision was applied there. */
@@ -81,6 +82,9 @@ export async function remoteNote(
   destination: Destination | null,
 ): Promise<RemoteResult> {
   if (!destination) return {}
+  // Work on the current tree: the place may have moved or gone. Best effort; WorkFlowy limits
+  // downloads to one a minute, and a failed refresh must not stop the note being filed.
+  if (before.name !== undefined) await refreshLive().catch(() => undefined)
   let target = destination
   if (destination.isNew) {
     const id = await backend.createTopLevel(escapeHtml(destination.name))
