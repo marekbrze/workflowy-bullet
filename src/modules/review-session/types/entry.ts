@@ -1,7 +1,7 @@
 import type { BaseEntity } from '@/shared/types'
 import type { Destination } from '@/modules/note-filing/types/destination'
 
-/** `archive`: kept for now, to be removed in bulk later (search WorkFlowy for `#archive`). */
+/** `archive`: kept for now, to be removed in bulk later (Connection → Archive → Delete all archived). */
 export type EntryType = 'task' | 'note' | 'event' | 'archive'
 
 /** All three non-open outcomes are "completed" in WorkFlowy. */

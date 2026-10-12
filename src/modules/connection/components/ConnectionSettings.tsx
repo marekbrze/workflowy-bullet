@@ -7,6 +7,7 @@ import { maskKey } from '../lib/connection'
 import type { Connection } from '../hooks/use-connection'
 import { ConnectForm } from './ConnectForm'
 import { SnapshotStatus } from './SnapshotStatus'
+import { ArchivePurge } from './ArchivePurge'
 
 interface ConnectionSettingsProps {
   connection: Connection
@@ -109,6 +110,8 @@ export function ConnectionSettings({ connection, onDisconnected }: ConnectionSet
         <h2 className="mb-2 text-lg font-semibold">Tree snapshot</h2>
         <SnapshotStatus />
       </div>
+
+      {!invalid && <ArchivePurge />}
 
       {import.meta.env.DEV && !invalid && (
         <div className="rounded-xl border border-dashed p-4">
