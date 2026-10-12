@@ -250,7 +250,15 @@ export function useReviewSession(mode: ReviewMode) {
       if (!entry) return Promise.resolve(false)
       return act({
         remote: (backend) => remoteNote(backend, entry, destination),
-        apply: (s, result) => decideNote(s, entry.id, destination, now(), result.mirrorItemId),
+        apply: (s, result) =>
+          decideNote(
+            s,
+            entry.id,
+            result.createdDestination ?? destination,
+            now(),
+            result.mirrorItemId,
+            result.createdDestination?.id,
+          ),
       })
     },
     deleteCurrent: () => {

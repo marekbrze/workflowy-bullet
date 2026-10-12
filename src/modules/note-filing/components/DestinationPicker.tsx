@@ -53,7 +53,8 @@ export function DestinationPicker({ open, ...body }: DestinationPickerProps) {
 
 interface Row {
   destination: Destination
-  section: 'Pinned' | 'Recent' | 'Result'
+  /** `Create`: no place has exactly this name, so it can be made */
+  section: 'Create' | 'Pinned' | 'Recent' | 'Result'
   /** A saved place that is no longer in the tree */
   missing: boolean
 }
@@ -112,8 +113,16 @@ function PickerBody({
   const page = searching
     ? searchIndex(index, deferredQuery, { excludeIds })
     : { results: [], total: 0 }
+  // Typed a name no place has exactly: offer to create it, before the results.
+  const typed = deferredQuery.trim()
+  const canCreate = searching && !nodes.some((n) => n.name.toLowerCase() === typed.toLowerCase())
+  const createRow: Row = {
+    destination: { id: `new:${typed}`, name: typed, path: [], childCount: 0, isNew: true },
+    section: 'Create',
+    missing: false,
+  }
   const rows: Row[] = searching
-    ? page.results.map((destination) => toRow(destination, 'Result'))
+    ? [...(canCreate ? [createRow] : []), ...page.results.map((destination) => toRow(destination, 'Result'))]
     : [
         ...saved.pinned.filter((d) => !excluded.has(d.id)).map((d) => toRow(d, 'Pinned')),
         ...saved.recent.filter((d) => !excluded.has(d.id)).map((d) => toRow(d, 'Recent')),
@@ -138,7 +147,8 @@ function PickerBody({
       return
     }
     const ok = await onPick(row.destination)
-    if (ok !== false) saved.markUsed(row.destination)
+    // A created place has no id here yet; it shows up in search after the next refresh.
+    if (ok !== false && !row.destination.isNew) saved.markUsed(row.destination)
   }
 
   const onKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
@@ -158,7 +168,7 @@ function PickerBody({
       setActive((activeIndex - 1 + rows.length) % rows.length)
     } else if (event.key === 'Enter' && event.shiftKey) {
       event.preventDefault()
-      saved.togglePin(rows[activeIndex].destination)
+      if (!rows[activeIndex].destination.isNew) saved.togglePin(rows[activeIndex].destination)
     } else if (event.key === 'Enter') {
       event.preventDefault()
       void pick(rows[activeIndex])
@@ -172,8 +182,10 @@ function PickerBody({
   )
 
   let lastSection: Row['section'] | null = null
+  // Places found; the Create row is not one.
+  const found = searching ? page.results.length : rows.length
   const liveCount = searching
-    ? rows.length === 0
+    ? found === 0
       ? 'No matches'
       : `${page.total} ${page.total === 1 ? 'result' : 'results'}`
     : ''
@@ -220,9 +232,29 @@ function PickerBody({
       {rows.length > 0 && (
         <ul id={listId} role="listbox" aria-label="Destinations" className="mt-2 max-h-72 overflow-y-auto">
           {rows.map((row, rowIndex) => {
-            const showHeading = row.section !== 'Result' && row.section !== lastSection
+            const showHeading = row.section !== 'Result' && row.section !== 'Create' && row.section !== lastSection
             lastSection = row.section
             const { destination, missing } = row
+            if (row.section === 'Create') {
+              return (
+                <li key="create" role="presentation">
+                  <button
+                    type="button"
+                    role="option"
+                    id={optionId(rowIndex)}
+                    aria-selected={rowIndex === activeIndex}
+                    tabIndex={-1}
+                    onClick={() => void pick(row)}
+                    className={`flex w-full min-w-0 flex-col items-start rounded-lg px-2 py-1.5 text-left outline-none ${rowIndex === activeIndex ? 'bg-accent' : 'hover:bg-muted'}`}
+                  >
+                    <span className="break-words text-base">
+                      Create <strong className="font-semibold">&ldquo;{destination.name}&rdquo;</strong>
+                    </span>
+                    <span className="text-sm text-muted-foreground">New bullet at the top level of WorkFlowy</span>
+                  </button>
+                </li>
+              )
+            }
             const pinned = saved.isPinned(destination.id)
             const fullPath = destination.path.join(' › ')
             return (
@@ -292,7 +324,7 @@ function PickerBody({
         </p>
       )}
 
-      {rows.length === 0 && nodes.length === 0 && !loading && (
+      {found === 0 && nodes.length === 0 && !loading && (
         <div role="status" className="mt-3 rounded-lg border p-3 text-sm">
           <p>Your WorkFlowy tree is empty or hasn&rsquo;t been downloaded yet.</p>
           {refreshButton}
@@ -300,11 +332,11 @@ function PickerBody({
         </div>
       )}
 
-      {rows.length === 0 && nodes.length > 0 && searching && (
+      {found === 0 && nodes.length > 0 && searching && (
         <div role="status" className="mt-3 rounded-lg border p-3 text-sm">
           <p>No matches for &ldquo;{deferredQuery.trim()}&rdquo;.</p>
           <p className="mt-1 text-muted-foreground">
-            The tree may be out of date. Refresh it, or keep the note in its day.
+            The tree may be out of date. Refresh it, create the place above, or keep the note in its day.
           </p>
           {refreshButton}
           {refreshMessage && <p className="mt-2 text-muted-foreground">{refreshMessage}</p>}

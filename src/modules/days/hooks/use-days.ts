@@ -92,12 +92,15 @@ export function useDays() {
     /** Mirrors (or moves the mirror of) a note. Returns `false` if it could not be saved. */
     fileNote: (id: string, destination: Destination): Promise<boolean> => {
       let mirrorItemId: string | undefined
+      let filedUnder = destination
       return change(
         id,
         async (entry) => {
-          mirrorItemId = (await remoteNote(getBackend(), entry, destination)).mirrorItemId
+          const result = await remoteNote(getBackend(), entry, destination)
+          mirrorItemId = result.mirrorItemId
+          filedUnder = result.createdDestination ?? destination
         },
-        (all) => fileNote(all, id, destination, new Date().toISOString(), mirrorItemId),
+        (all) => fileNote(all, id, filedUnder, new Date().toISOString(), mirrorItemId),
       )
     },
   }

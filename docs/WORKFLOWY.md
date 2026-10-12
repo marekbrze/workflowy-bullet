@@ -18,6 +18,7 @@
 | Irrelevant | add `#irrelevant`, complete | restore name, uncomplete |
 | Roll over | copy the bullet with all sub-items to the end of the target day (`YYYY-MM-DD`: tomorrow in a today review, else today), **then** add `#migrated` and complete the original; if that fails the copy is deleted again | restore name, uncomplete, delete the copy |
 | Mirror | create the mirror (the old one is removed after); the app remembers the mirror's id locally | remove the mirror; a replaced mirror is re-created |
+| Mirror to a new place | when the typed name matches no bullet exactly, "Create …" makes a bullet with that name at the end of the top level (`parent_id: "None"`), then mirrors the note under it; if the mirror fails the new bullet is deleted | remove the mirror, delete the created bullet |
 | Delete | delete the bullet and its subtree | not possible |
 Copies keep each sub-item's layout (code blocks stay code blocks). Copies larger than 200 bullets are refused with a message. A decision is applied to WorkFlowy first and kept locally only if that worked; a failed save locally after a successful write is retried without repeating the write.
 

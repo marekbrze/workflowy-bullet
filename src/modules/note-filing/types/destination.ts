@@ -5,4 +5,6 @@ export interface Destination {
   /** Names of the parent nodes, outermost first */
   path: string[]
   childCount: number
+  /** Not in the tree yet: picking it creates a bullet with this name at the top level */
+  isNew?: true
 }

@@ -265,6 +265,8 @@ export function decideNote(
   now: string,
   /** The mirror WorkFlowy created, kept so it can be moved or undone */
   mirrorItemId?: string,
+  /** The bullet created to be the destination, removed again on undo */
+  createdDestinationId?: string,
 ): SessionState {
   const before = findEntry(state.entries, entryId)
   return {
@@ -274,7 +276,7 @@ export function decideNote(
     queue: without(state.queue, entryId),
     decisions: [
       ...state.decisions,
-      decision(destination ? 'mirror' : 'keep-in-day', before, now, { mirrorItemId }),
+      decision(destination ? 'mirror' : 'keep-in-day', before, now, { mirrorItemId, createdDestinationId }),
     ],
   }
 }

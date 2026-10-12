@@ -14,6 +14,8 @@ export interface RemoteResult {
   mirrorItemId?: string
   /** The code block made when a code block was named and typed */
   codeChildId?: string
+  /** The place a note was filed under when it had to be created first */
+  createdDestination?: Destination
 }
 
 /**
@@ -69,18 +71,33 @@ export async function remoteTask(
   return { copyId }
 }
 
-/** `destination === null` keeps the note as it is. A destination moves the note's mirror there. */
+/**
+ * `destination === null` keeps the note as it is. A destination moves the note's mirror there;
+ * a new one (`isNew`) is created at the top level first.
+ */
 export async function remoteNote(
   backend: Backend,
   before: Entry,
   destination: Destination | null,
 ): Promise<RemoteResult> {
   if (!destination) return {}
+  let target = destination
+  if (destination.isNew) {
+    const id = await backend.createTopLevel(escapeHtml(destination.name))
+    target = { id, name: destination.name, path: [], childCount: 0 }
+  }
   // The new mirror first, then the old one goes: a failure in between leaves two, never none.
-  const mirrorItemId = await backend.mirror(before.id, destination.id)
+  let mirrorItemId: string
+  try {
+    mirrorItemId = await backend.mirror(before.id, target.id)
+  } catch (error) {
+    // Don't leave an empty place behind: a retry creates it again.
+    if (destination.isNew) await backend.deleteNode(target.id).catch(() => undefined)
+    throw error
+  }
   if (before.mirrorItemId) await backend.removeMirror(before.mirrorItemId).catch(() => undefined)
-  saveMirror(before.id, { destination, mirrorItemId })
-  return { mirrorItemId }
+  saveMirror(before.id, { destination: target, mirrorItemId })
+  return { mirrorItemId, ...(destination.isNew && { createdDestination: target }) }
 }
 
 export async function remoteDelete(backend: Backend, before: Entry): Promise<RemoteResult> {
@@ -116,6 +133,8 @@ export async function remoteUndo(backend: Backend, decision: Decision): Promise<
       break
     case 'mirror': {
       if (decision.mirrorItemId) await backend.removeMirror(decision.mirrorItemId)
+      // A place created for this note goes too.
+      if (decision.createdDestinationId) await backend.deleteNode(decision.createdDestinationId)
       // A moved mirror: the one it replaced comes back.
       if (before.mirroredTo) {
         const restored = await backend.mirror(before.id, before.mirroredTo.id)
