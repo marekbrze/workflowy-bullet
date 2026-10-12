@@ -20,7 +20,7 @@ export function ArchivePurge() {
 
   const run = async () => {
     setBusy(true)
-    const { deleted, failed } = await purgeArchive(index, undefined, (done, total, current) =>
+    const { deleted, failed, firstError } = await purgeArchive(index, undefined, (done, total, current) =>
       setProgress({ done, total, name: stripHtml(current.name) }),
     )
     setBusy(false)
@@ -29,7 +29,7 @@ export function ArchivePurge() {
     setVersion((value) => value + 1)
     setMessage(
       failed > 0
-        ? `Deleted ${deleted}, but ${failed} could not be deleted. Try again.`
+        ? `Deleted ${deleted}, but ${failed} could not be deleted${firstError ? ` (${firstError})` : ''}. Try again.`
         : `Deleted ${deleted} archived ${deleted === 1 ? 'item' : 'items'}.`,
     )
   }

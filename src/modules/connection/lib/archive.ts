@@ -6,7 +6,7 @@ import { getBackend, type Backend } from './backend'
 import { saveSnapshot } from './snapshot-store'
 import { getSnapshotState } from './snapshot-state'
 import { deriveEntries, type TreeIndex } from './tree'
-import type { WorkflowyNode } from './workflowy-api'
+import { ApiError, NetworkError, RateLimitError, type WorkflowyNode } from './workflowy-api'
 
 /**
  * Every bullet tagged `#archive`. A tagged bullet inside another tagged one is left out:
@@ -32,6 +32,26 @@ export function findArchived(index: TreeIndex): WorkflowyNode[] {
 export interface PurgeResult {
   deleted: number
   failed: number
+  /** Why the first deletion failed, so the user is not left guessing. */
+  firstError?: string
+}
+
+const MAX_ATTEMPTS = 6
+const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
+
+/** WorkFlowy limits how fast bullets can be deleted: on a rate limit or a hiccup, wait and try again. */
+async function deleteWithRetry(backend: Backend, id: string): Promise<void> {
+  for (let attempt = 1; ; attempt++) {
+    try {
+      await backend.deleteNode(id)
+      return
+    } catch (error) {
+      const retryable =
+        error instanceof RateLimitError || error instanceof NetworkError || (error instanceof ApiError && error.status >= 500)
+      if (!retryable || attempt >= MAX_ATTEMPTS) throw error
+      await wait(1000 * 2 ** (attempt - 1))
+    }
+  }
 }
 
 /** Permanently deletes every `#archive` bullet (with what is under it) from WorkFlowy. */
@@ -44,13 +64,15 @@ export async function purgeArchive(
   const targets = findArchived(index)
   let deleted = 0
   let failed = 0
+  let firstError: string | undefined
   for (const [position, node] of targets.entries()) {
     onProgress?.(position, targets.length, node)
     try {
-      await backend.deleteNode(node.id)
+      await deleteWithRetry(backend, node.id)
       deleted++
-    } catch {
+    } catch (error) {
       failed++
+      firstError ??= error instanceof Error ? error.message : String(error)
     }
   }
   if (deleted > 0) {
@@ -61,5 +83,5 @@ export async function purgeArchive(
     }
     writeStorage('entries', deriveEntries(index, todayISO(), loadMirrors()))
   }
-  return { deleted, failed }
+  return { deleted, failed, firstError }
 }
