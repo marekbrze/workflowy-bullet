@@ -1,4 +1,4 @@
-import { addTag, setTypeTag } from './tags'
+import { addTag, escapeHtml, setTypeTag } from './tags'
 import type { Decision, ReviewMode } from '../types/session'
 import type { Entry, EntryType } from '../types/entry'
 import type { Destination } from '@/modules/note-filing/types/destination'
@@ -12,6 +12,8 @@ export interface RemoteResult {
   copyId?: string
   /** The mirror that was created */
   mirrorItemId?: string
+  /** The code block made when a code block was named and typed */
+  codeChildId?: string
 }
 
 /**
@@ -24,8 +26,16 @@ export async function remoteClassify(
   backend: Backend,
   before: Entry,
   type: EntryType,
+  /** Required for a code block: the name of the text bullet it becomes */
+  wrapperName?: string,
 ): Promise<RemoteResult> {
-  if (before.name !== undefined) await backend.setName(before.id, setTypeTag(before.name, type))
+  if (before.name === undefined) return {}
+  if (before.codeBlock) {
+    if (!wrapperName?.trim()) throw new Error('A code block needs a name before it can be typed.')
+    const name = setTypeTag(escapeHtml(wrapperName.trim()), type)
+    return { codeChildId: await backend.wrapCodeBlock(before.id, before.name, name) }
+  }
+  await backend.setName(before.id, setTypeTag(before.name, type))
   return {}
 }
 
@@ -86,7 +96,11 @@ export async function remoteUndo(backend: Backend, decision: Decision): Promise<
   }
   switch (decision.kind) {
     case 'classify':
-      await restoreName()
+      if (decision.codeChildId && before.name !== undefined) {
+        await backend.unwrapCodeBlock(before.id, before.name, decision.codeChildId)
+      } else {
+        await restoreName()
+      }
       break
     case 'done':
       await backend.uncomplete(before.id)

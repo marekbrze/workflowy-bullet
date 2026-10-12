@@ -222,12 +222,13 @@ export function useReviewSession(mode: ReviewMode) {
     undoLabel: session ? describeNextUndo(session.decisions) : null,
     start,
     addNewEntries,
-    classify: (type: EntryType) => {
+    /** `wrapperName` names a code block, which is never tagged itself. */
+    classify: (type: EntryType, wrapperName?: string) => {
       const entry = currentEntry
       if (!entry) return Promise.resolve(false)
       return act({
-        remote: (backend) => remoteClassify(backend, entry, type),
-        apply: (s) => classify(s, entry.id, type, now()),
+        remote: (backend) => remoteClassify(backend, entry, type, wrapperName),
+        apply: (s, result) => classify(s, entry.id, type, now(), wrapperName, result.codeChildId),
       })
     },
     decideTask: (kind: TaskDecision) => {

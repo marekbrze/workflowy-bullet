@@ -35,6 +35,7 @@ export function DecisionBar({
           { key: 'a', label: 'Task', onSelect: () => onClassify('task') },
           { key: 's', label: 'Note', onSelect: () => onClassify('note') },
           { key: 'd', label: 'Event', onSelect: () => onClassify('event') },
+          { key: 'f', label: 'Archive', onSelect: () => onClassify('archive') },
         ]
       : [
           { key: 'a', label: 'Done', onSelect: () => onTask('done') },

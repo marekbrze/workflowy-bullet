@@ -102,6 +102,7 @@ function entryFromNode(
     outcome: type === 'task' ? outcomeFromName(node.name, node.completed) : null,
     completed: node.completed,
     mirroredTo: mirror?.destination ?? null,
+    ...(node.data?.layoutMode === 'code-block' && { codeBlock: true }),
     mirrorItemId: mirror?.mirrorItemId,
   }
 }

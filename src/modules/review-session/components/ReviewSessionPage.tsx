@@ -13,6 +13,7 @@ import { useReviewSession } from '../hooks/use-review-session'
 import { getStep } from '../lib/session-logic'
 import type { EntryType } from '../types/entry'
 import { REVIEW_MODES, type ReviewMode } from '../types/session'
+import { CodeBlockNameDialog } from './CodeBlockNameDialog'
 import { DecisionBar } from './DecisionBar'
 import { EntryCard } from './EntryCard'
 import { EntryCardSkeleton } from './EntryCardSkeleton'
@@ -59,6 +60,8 @@ function ReviewSession({ mode }: { mode: ReviewMode }) {
   const review = useReviewSession(mode)
   const [confirming, setConfirming] = useState<'delete' | 'end' | null>(null)
   const [retyping, setRetyping] = useState(false)
+  // A code block is named before it is typed: the type waits here meanwhile.
+  const [naming, setNaming] = useState<EntryType | null>(null)
 
   const { session, currentEntry, error, start, candidateCount } = review
 
@@ -78,7 +81,7 @@ function ReviewSession({ mode }: { mode: ReviewMode }) {
   const exit = () => navigate('/')
   const step = currentEntry ? getStep(currentEntry) : null
   const queueLength = review.queue.length
-  const overlayOpen = confirming !== null || step === 'note'
+  const overlayOpen = confirming !== null || step === 'note' || naming !== null
   const locked = error !== null || review.pending
   // Correcting a type is offered while the entry is on its task step.
   const canChangeType = step === 'task'
@@ -89,7 +92,8 @@ function ReviewSession({ mode }: { mode: ReviewMode }) {
       setRetyping(false)
       if (currentEntry?.type === type) return
     }
-    review.classify(type)
+    if (currentEntry?.codeBlock) setNaming(type)
+    else review.classify(type)
   }
 
   const handlers: Record<string, () => void> = {
@@ -104,6 +108,7 @@ function ReviewSession({ mode }: { mode: ReviewMode }) {
       handlers.a = () => classify('task')
       handlers.s = () => classify('note')
       handlers.d = () => classify('event')
+      handlers.f = () => classify('archive')
     } else if (step === 'task') {
       handlers.a = () => review.decideTask('done')
       handlers.s = () => review.decideTask('roll-over')
@@ -238,6 +243,17 @@ function ReviewSession({ mode }: { mode: ReviewMode }) {
         error={error !== null}
         onRetry={review.retry}
         onDismissError={review.canDismissError ? review.dismissError : undefined}
+      />
+
+      <CodeBlockNameDialog
+        type={naming}
+        busy={review.pending}
+        onSubmit={async (name) => {
+          const type = naming
+          setNaming(null)
+          if (type) await review.classify(type, name)
+        }}
+        onCancel={() => setNaming(null)}
       />
 
       <ConfirmDialog

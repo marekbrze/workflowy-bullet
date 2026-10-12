@@ -3,7 +3,7 @@ import { generateId } from '@/shared/types'
 import type { Destination } from '@/modules/note-filing/types/destination'
 import type { Entry, EntryType } from '../types/entry'
 import type { Decision, DecisionKind, ReviewMode, ReviewSession } from '../types/session'
-import { addTag, setTypeTag } from './tags'
+import { addTag, escapeHtml, setTypeTag } from './tags'
 
 export interface SessionState {
   entries: Entry[]
@@ -32,7 +32,7 @@ export function buildQueue(entries: Entry[], mode: ReviewMode, today: string): s
     .map((e) => e.id)
 }
 
-/** `null` = nothing is left to decide for this entry (an event, or a completed task). */
+/** `null` = nothing is left to decide for this entry (an event, an archive item, or a completed task). */
 export function getStep(entry: Entry): Step | null {
   if (entry.type === null) return 'classify'
   if (entry.type === 'note') return 'note'
@@ -154,9 +154,23 @@ function decision(
 /**
  * The one rule for typing an entry, used by the session card and the Today list.
  * An entry already completed in WorkFlowy becomes a done task; it is never re-opened.
+ * A code block is never tagged: it becomes a text bullet named `wrapperName`, the code under it.
  */
-export function typeEntry(entry: Entry, type: EntryType, now: string): Entry {
+export function typeEntry(entry: Entry, type: EntryType, now: string, wrapperName?: string): Entry {
   const outcome = type === 'task' ? (entry.completed === true ? 'done' : 'open') : null
+  if (entry.codeBlock && wrapperName?.trim()) {
+    const text = wrapperName.trim()
+    return {
+      ...entry,
+      text,
+      name: entry.name === undefined ? undefined : setTypeTag(escapeHtml(text), type),
+      children: [entry.text, ...entry.children],
+      codeBlock: undefined,
+      type,
+      outcome,
+      updatedAt: now,
+    }
+  }
   // The type lives in the bullet's text as a tag; keep the local copy of the name in step.
   const name = entry.name === undefined ? undefined : setTypeTag(entry.name, type)
   return { ...entry, name, type, outcome, updatedAt: now }
@@ -168,14 +182,18 @@ export function classify(
   entryId: string,
   type: EntryType,
   now: string,
+  /** For a code block: the name of the text bullet it becomes */
+  wrapperName?: string,
+  /** The code block WorkFlowy created for it */
+  codeChildId?: string,
 ): SessionState {
   const before = findEntry(state.entries, entryId)
   return {
-    entries: state.entries.map((e) => (e.id === entryId ? typeEntry(e, type, now) : e)),
-    // A task still needs its fate and a note still needs a destination; an event is done,
-    // and so is a completed task — `reconcileQueue` drops both.
-    queue: type === 'event' ? without(state.queue, entryId) : state.queue,
-    decisions: [...state.decisions, decision('classify', before, now, { toType: type })],
+    entries: state.entries.map((e) => (e.id === entryId ? typeEntry(e, type, now, wrapperName) : e)),
+    // A task still needs its fate and a note still needs a destination; an event or archive item
+    // is done, and so is a completed task — `reconcileQueue` drops them.
+    queue: type === 'event' || type === 'archive' ? without(state.queue, entryId) : state.queue,
+    decisions: [...state.decisions, decision('classify', before, now, { toType: type, codeChildId })],
   }
 }
 

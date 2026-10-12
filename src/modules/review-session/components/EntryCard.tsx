@@ -33,7 +33,7 @@ export function EntryCard({ entry, position, total, today }: EntryCardProps) {
       <p className="mt-4 whitespace-pre-wrap break-words text-entry">{entry.text}</p>
 
       {entry.children.length > 0 && (
-        <details className="mt-4 text-sm">
+        <details open className="mt-4 text-sm">
           <summary className="cursor-pointer rounded text-muted-foreground focus-ring">{childLabel}</summary>
           <ul className="mt-2 list-disc space-y-1 pl-5">
             {entry.children.map((child, index) => (
@@ -47,6 +47,7 @@ export function EntryCard({ entry, position, total, today }: EntryCardProps) {
 
       <div className="mt-4 flex flex-wrap gap-1.5">
         {entry.type ? <Chip>{`#${entry.type}`}</Chip> : <Chip>No type yet</Chip>}
+        {entry.codeBlock && <Chip>Code block</Chip>}
         {entry.mirroredTo && <Chip>{`Mirrored to ${entry.mirroredTo.name}`}</Chip>}
       </div>
     </article>

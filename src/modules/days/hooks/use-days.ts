@@ -83,11 +83,11 @@ export function useDays() {
     error,
     clearError: () => setError(null),
     /** Types or corrects an entry. Returns `false` if it could not be saved. */
-    quickType: (id: string, type: EntryType): Promise<boolean> =>
+    quickType: (id: string, type: EntryType, wrapperName?: string): Promise<boolean> =>
       change(
         id,
-        (entry) => remoteClassify(getBackend(), entry, type),
-        (all) => quickType(all, id, type, new Date().toISOString()),
+        (entry) => remoteClassify(getBackend(), entry, type, wrapperName),
+        (all) => quickType(all, id, type, new Date().toISOString(), wrapperName),
       ),
     /** Mirrors (or moves the mirror of) a note. Returns `false` if it could not be saved. */
     fileNote: (id: string, destination: Destination): Promise<boolean> => {

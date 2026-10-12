@@ -11,6 +11,7 @@ Terms and concepts specific to this project. Used across all project skills to m
 | zadanie | `Task` | An entry that is something to do. Must end up done, rolled over, or irrelevant. | "todo", "action" |
 | notatka | `Note` | An entry that records information from the day. Stays in the day, optionally mirrored elsewhere. | "memo", "log" |
 | zdarzenie | `Event` | An entry recording something that happened / took place on that day. Only tagged; stays as a record. | "appointment", "meeting" (too narrow) |
+| archiwum | `Archive` (type `archive`) | An entry the user marks as kept for now but meant to be removed in bulk later, by searching WorkFlowy for `#archive`. Only tagged, like an event. | "delete", "irrelevant" |
 | typ / tag | `EntryType` | The Bullet Journal classification of an entry (task, note, event), persisted as a tag in WorkFlowy. Assigned by the app based on the user's decision. | "category", "label" |
 | procesowanie dnia | `DayReview` | The act of going through a day's entries one at a time and deciding on each. The morning review of yesterday is the main ritual. | "cleanup", "triage" (in UI) |
 | kolejka | `ReviewQueue` | The ordered set of a day's unprocessed entries, shown one at a time. | "list" |

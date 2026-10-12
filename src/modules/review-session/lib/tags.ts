@@ -4,7 +4,7 @@ import type { EntryType, TaskOutcome } from '../types/entry'
  * Tags live in the bullet's text, exactly as typed in WorkFlowy: `Call the dentist #task`.
  * The app reads them to know an entry's type and writes them when the user decides.
  */
-export const TYPE_TAGS: EntryType[] = ['task', 'note', 'event']
+export const TYPE_TAGS: EntryType[] = ['task', 'note', 'event', 'archive']
 
 // A tag ends at whitespace, markup or punctuation: `#task` matches in "#task." and "#task<", not in "#tasks".
 const tagPattern = (tag: string, flags = 'i') =>
@@ -44,6 +44,11 @@ export function setTypeTag(name: string, type: EntryType): string {
   let result = name
   for (const other of TYPE_TAGS) if (other !== type) result = removeTag(result, other)
   return addTag(result, type)
+}
+
+/** Text the user typed, made safe to use as a bullet's HTML name. */
+export function escapeHtml(text: string): string {
+  return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
 }
 
 const ENTITIES: Record<string, string> = {

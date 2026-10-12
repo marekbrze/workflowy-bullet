@@ -20,6 +20,13 @@ export interface Backend {
   /** Mirrors a bullet under a destination. Returns the id of the mirror. */
   mirror(entryId: string, destinationId: string): Promise<string>
   removeMirror(mirrorItemId: string): Promise<void>
+  /**
+   * Turns code block `id` into a text bullet named `name`, in the same place, and puts the code
+   * (`code`, its old name) in a new code block as its first child. Returns the new code block's id.
+   */
+  wrapCodeBlock(id: string, code: string, name: string): Promise<string>
+  /** Reverts `wrapCodeBlock`: `id` is a code block holding `code` again, `codeChildId` is gone. */
+  unwrapCodeBlock(id: string, code: string, codeChildId: string): Promise<void>
 }
 
 /** Demo data is never written anywhere. */
@@ -31,6 +38,8 @@ export const demoBackend: Backend = {
   deleteNode: async () => {},
   mirror: async () => generateId(),
   removeMirror: async () => {},
+  wrapCodeBlock: async () => generateId(),
+  unwrapCodeBlock: async () => {},
 }
 
 /** Past this many bullets a copy would take too many requests; better to say so than to stall. */
@@ -63,9 +72,10 @@ export function createLiveBackend(api: WorkflowyApi): Backend {
 
       const created: WorkflowyNode[] = []
       const now = Math.floor(Date.now() / 1000)
-      const remember = (id: string, parentId: string, name: string, priority: number, completed: boolean) =>
+      const remember = (id: string, parentId: string, name: string, priority: number, completed: boolean, layoutMode?: string) =>
         created.push({
           id, parent_id: parentId, name, note: null, priority, completed,
+          ...(layoutMode && { data: { layoutMode } }),
           createdAt: now, modifiedAt: now, completedAt: null,
         })
 
@@ -76,8 +86,10 @@ export function createLiveBackend(api: WorkflowyApi): Backend {
         // Children are created in order, so their order is kept.
         const copyChildren = async (sourceId: string, newParentId: string) => {
           for (const [position, child] of (index?.children.get(sourceId) ?? []).entries()) {
-            const childId = await api.createNode({ parent_id: newParentId, name: child.name, position: 'bottom' })
-            remember(childId, newParentId, child.name, position, child.completed)
+            // Code blocks, headings and the like stay what they were.
+            const layoutMode = child.data?.layoutMode
+            const childId = await api.createNode({ parent_id: newParentId, name: child.name, position: 'bottom', layoutMode })
+            remember(childId, newParentId, child.name, position, child.completed, layoutMode)
             if (child.completed) await api.completeNode(childId)
             await copyChildren(child.id, childId)
           }
@@ -101,6 +113,41 @@ export function createLiveBackend(api: WorkflowyApi): Backend {
     mirror: (entryId, destinationId) => api.mirrorNode(entryId, destinationId),
     removeMirror: async (mirrorItemId) => {
       await api.deleteMirror(mirrorItemId)
+    },
+
+    wrapCodeBlock: async (id, code, name) => {
+      // Created empty and named after: a new bullet's name is read as markdown, an update's is not.
+      const codeChildId = await api.createNode({ parent_id: id, name: '', position: 'top', layoutMode: 'code-block' })
+      try {
+        await api.updateNode(codeChildId, { name: code })
+        await api.updateNode(id, { name, layoutMode: 'bullets' })
+      } catch (error) {
+        await api.deleteNode(codeChildId).catch(() => undefined)
+        throw error
+      }
+      const index = getSnapshotState().index
+      const node = index?.byId.get(id)
+      if (index && node) {
+        const now = Math.floor(Date.now() / 1000)
+        index.byId.set(id, { ...node, name, data: { ...node.data, layoutMode: 'bullets' } })
+        const child: WorkflowyNode = {
+          id: codeChildId, parent_id: id, name: code, note: null, priority: -1, completed: false,
+          data: { layoutMode: 'code-block' }, createdAt: now, modifiedAt: now, completedAt: null,
+        }
+        index.byId.set(codeChildId, child)
+        index.children.set(id, [child, ...(index.children.get(id) ?? [])])
+      }
+      return codeChildId
+    },
+
+    unwrapCodeBlock: async (id, code, codeChildId) => {
+      await api.updateNode(id, { name: code, layoutMode: 'code-block' })
+      await api.deleteNode(codeChildId)
+      const index = getSnapshotState().index
+      if (!index) return
+      const node = index.byId.get(id)
+      if (node) index.byId.set(id, { ...node, name: code, data: { ...node.data, layoutMode: 'code-block' } })
+      removeSubtreeFromIndex(index, codeChildId)
     },
   }
 }

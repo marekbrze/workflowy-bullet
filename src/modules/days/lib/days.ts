@@ -30,8 +30,8 @@ export function dayStatusText(day: DaySummary): string {
 }
 
 /** Sets or corrects the type of an entry (the app writes the tag to WorkFlowy). Same rule as the session card. */
-export function quickType(entries: Entry[], id: string, type: EntryType, now: string): Entry[] {
-  return entries.map((e) => (e.id === id ? typeEntry(e, type, now) : e))
+export function quickType(entries: Entry[], id: string, type: EntryType, now: string, wrapperName?: string): Entry[] {
+  return entries.map((e) => (e.id === id ? typeEntry(e, type, now, wrapperName) : e))
 }
 
 /** Files a note: sets (or moves) its mirror. */

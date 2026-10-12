@@ -113,7 +113,7 @@ export function createApi(config: ApiConfig, fetchImpl: Fetch = (...args) => fet
       input: { parent_id: string; name: string; note?: string; position?: 'top' | 'bottom'; layoutMode?: string },
       signal?: AbortSignal,
     ) => (await request<{ item_id: string }>('POST', '/nodes', { body: input, signal })).item_id,
-    updateNode: (id: string, input: { name?: string; note?: string }, signal?: AbortSignal) =>
+    updateNode: (id: string, input: { name?: string; note?: string; layoutMode?: string }, signal?: AbortSignal) =>
       request<{ status: string }>('POST', `/nodes/${encodeURIComponent(id)}`, { body: input, signal }),
     deleteNode: (id: string, signal?: AbortSignal) =>
       request<{ status: string }>('DELETE', `/nodes/${encodeURIComponent(id)}`, { signal }),

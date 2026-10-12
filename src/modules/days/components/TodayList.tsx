@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button'
 import { DestinationPicker } from '@/modules/note-filing/components/DestinationPicker'
 import type { Destination } from '@/modules/note-filing/types/destination'
 import type { Entry, EntryType } from '@/modules/review-session/types/entry'
+import { CodeBlockNameDialog } from '@/modules/review-session/components/CodeBlockNameDialog'
 import { limitItems } from '../lib/days'
 
 interface TodayListProps {
@@ -13,7 +14,8 @@ interface TodayListProps {
   /** Open tasks that were rolled over to tomorrow */
   tomorrowCount?: number
   /** Resolves to `false` when the change could not be saved */
-  onQuickType: (id: string, type: EntryType) => boolean | void | Promise<boolean | void>
+  /** `wrapperName` names a code block, which is never tagged itself */
+  onQuickType: (id: string, type: EntryType, wrapperName?: string) => boolean | void | Promise<boolean | void>
   onFileNote: (id: string, destination: Destination) => boolean | Promise<boolean>
   /** The entry whose change is on its way to WorkFlowy: its row waits */
   busyId?: string | null
@@ -27,6 +29,7 @@ const TYPES: { type: EntryType; label: string }[] = [
   { type: 'task', label: 'Task' },
   { type: 'note', label: 'Note' },
   { type: 'event', label: 'Event' },
+  { type: 'archive', label: 'Archive' },
 ]
 
 function statusLabel(entry: Entry): string {
@@ -54,6 +57,8 @@ export function TodayList({
 }: TodayListProps) {
   const [retypingId, setRetypingId] = useState<string | null>(null)
   const [filingId, setFilingId] = useState<string | null>(null)
+  // A code block waiting for its name before it is typed.
+  const [naming, setNaming] = useState<{ id: string; type: EntryType } | null>(null)
   const [showAll, setShowAll] = useState(false)
   // When a row changes shape the pressed button disappears; focus follows the user to the next control.
   const [focusId, setFocusId] = useState<string | null>(null)
@@ -83,6 +88,10 @@ export function TodayList({
             aria-pressed={retyping ? entry.type === type : undefined}
             disabled={busyId !== null}
             onClick={async () => {
+              if (entry.codeBlock) {
+                setNaming({ id: entry.id, type })
+                return
+              }
               if ((await onQuickType(entry.id, type)) === false) return
               setRetypingId(null)
               setFocusId(`change-${entry.id}`)
@@ -185,6 +194,20 @@ export function TodayList({
           {tomorrowCount} {tomorrowCount === 1 ? 'task' : 'tasks'} waiting for tomorrow
         </p>
       )}
+
+      <CodeBlockNameDialog
+        type={naming?.type ?? null}
+        busy={busyId !== null}
+        onSubmit={async (name) => {
+          if (!naming) return
+          const { id, type } = naming
+          setNaming(null)
+          if ((await onQuickType(id, type, name)) === false) return
+          setRetypingId(null)
+          setFocusId(`change-${id}`)
+        }}
+        onCancel={() => setNaming(null)}
+      />
 
       <DestinationPicker
         open={filing !== null}
