@@ -31,6 +31,8 @@ export interface Decision {
   createdEntryId?: string
   /** The code block `classify` created when it named a code block (removed again on undo) */
   codeChildId?: string
+  /** Where `classify` moved the entry from when it put it under its type's group (moved back on undo) */
+  movedFromId?: string
   /** The top-level bullet `mirror` created to file the note under (deleted on undo) */
   createdDestinationId?: string
   /** The mirror created by `mirror` (needed to remove it on undo) */

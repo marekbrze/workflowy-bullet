@@ -53,6 +53,32 @@ export function tomorrowTaskCount(entries: Entry[], today: string): number {
   return entries.filter((e) => e.date === tomorrow && e.type === 'task' && e.outcome === 'open').length
 }
 
+export interface EntrySection {
+  key: EntryType | 'untyped'
+  label: string
+  entries: Entry[]
+}
+
+const SECTIONS: { key: EntrySection['key']; label: string }[] = [
+  { key: 'untyped', label: 'To type' },
+  { key: 'task', label: 'Tasks' },
+  { key: 'event', label: 'Events' },
+  { key: 'note', label: 'Notes' },
+  { key: 'archive', label: 'Archive' },
+]
+
+/**
+ * A day's entries under the same bullets as in WorkFlowy: by type, and an untagged entry under
+ * the group it sits in (it gets that tag in a review). Empty sections are left out; order within
+ * a section is kept.
+ */
+export function sectionEntries(entries: Entry[]): EntrySection[] {
+  const keyOf = (e: Entry): EntrySection['key'] => e.type ?? e.group ?? 'untyped'
+  return SECTIONS.map(({ key, label }) => ({ key, label, entries: entries.filter((e) => keyOf(e) === key) })).filter(
+    (section) => section.entries.length > 0,
+  )
+}
+
 /** Show only the first `limit` items until the user asks for all. */
 export function limitItems<T>(items: T[], limit: number, showAll: boolean): T[] {
   return showAll ? items : items.slice(0, limit)

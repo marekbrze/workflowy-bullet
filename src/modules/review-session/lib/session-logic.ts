@@ -189,9 +189,11 @@ export function classify(
     codeChildId?: string
     /** A note that stays in its day: no destination is asked for */
     keepInDay?: boolean
+    /** Where WorkFlowy moved the entry from when it went under its type's group */
+    movedFromId?: string
   } = {},
 ): SessionState {
-  const { wrapperName, codeChildId, keepInDay } = options
+  const { wrapperName, codeChildId, keepInDay, movedFromId } = options
   const before = findEntry(state.entries, entryId)
   // A task still needs its fate and a note to file still needs a destination; anything else is
   // done here, and so is a completed task — `reconcileQueue` drops it.
@@ -199,7 +201,7 @@ export function classify(
   return {
     entries: state.entries.map((e) => (e.id === entryId ? typeEntry(e, type, now, wrapperName) : e)),
     queue: settled ? without(state.queue, entryId) : state.queue,
-    decisions: [...state.decisions, decision('classify', before, now, { toType: type, codeChildId })],
+    decisions: [...state.decisions, decision('classify', before, now, { toType: type, codeChildId, movedFromId })],
   }
 }
 

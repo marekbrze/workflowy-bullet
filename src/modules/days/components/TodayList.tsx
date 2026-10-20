@@ -4,7 +4,7 @@ import { DestinationPicker } from '@/modules/note-filing/components/DestinationP
 import type { Destination } from '@/modules/note-filing/types/destination'
 import type { Entry, EntryType } from '@/modules/review-session/types/entry'
 import { CodeBlockNameDialog } from '@/modules/review-session/components/CodeBlockNameDialog'
-import { limitItems } from '../lib/days'
+import { limitItems, sectionEntries } from '../lib/days'
 
 interface TodayListProps {
   entries: Entry[]
@@ -71,7 +71,10 @@ export function TodayList({
   const resuming = remaining !== null
   const finished = resuming && remaining === 0
   const canStart = resuming || waiting > 0
-  const visible = limitItems(entries, VISIBLE_LIMIT, showAll)
+  // Sections first, then the limit: "Show all" reveals the rest in the same order.
+  const sections = sectionEntries(entries)
+  const sectionTotal = new Map(sections.map((section) => [section.key, section.entries.length]))
+  const visible = sectionEntries(limitItems(sections.flatMap((section) => section.entries), VISIBLE_LIMIT, showAll))
   const filing = entries.find((e) => e.id === filingId) ?? null
 
   const typeRow = (entry: Entry) => {
@@ -136,57 +139,66 @@ export function TodayList({
       {entries.length === 0 ? (
         <p className="mt-2 text-sm text-muted-foreground">Nothing captured today yet.</p>
       ) : (
-        <ul className="mt-2 divide-y rounded-xl border bg-card">
-          {visible.map((entry) => (
-            <li key={entry.id} className="flex flex-wrap items-center justify-between gap-2 px-3 py-2">
-              {entry.codeBlock ? (
-                <pre className="min-w-0 flex-1 whitespace-pre-wrap break-words rounded-md bg-muted px-2 py-1 font-mono text-sm">
-                  <code>{entry.text}</code>
-                </pre>
-              ) : (
-                <span className="min-w-0 flex-1 break-words text-base">{entry.text}</span>
-              )}
-              {!entry.type || retypingId === entry.id ? (
-                typeRow(entry)
-              ) : (
-                <span className="flex flex-wrap items-center gap-1">
-                  <span className="text-sm text-muted-foreground">{statusLabel(entry)}</span>
-                  {entry.type === 'note' && (
-                    <>
-                      {entry.mirroredTo && (
-                        <span className="text-sm text-muted-foreground">
-                          · mirrored to {entry.mirroredTo.name}
-                        </span>
-                      )}
-                      <Button
-                        variant="ghost"
-                        size="xs"
-                        aria-label={`${entry.mirroredTo ? 'Move' : 'File'} note: ${entry.text}`}
-                        onClick={() => setFilingId(entry.id)}
-                      >
-                        {entry.mirroredTo ? 'Move…' : 'File…'}
-                      </Button>
-                    </>
-                  )}
-                  {canChangeType(entry) && (
-                    <Button
-                      variant="ghost"
-                      size="xs"
-                      id={`change-${entry.id}`}
-                      aria-label={`Change type: ${entry.text}`}
-                      onClick={() => {
-                        setRetypingId(entry.id)
-                        setFocusId(`type-${entry.id}-${entry.type}`)
-                      }}
-                    >
-                      Change
-                    </Button>
-                  )}
-                </span>
-              )}
-            </li>
+        <div className="mt-2 space-y-3">
+          {visible.map((section) => (
+            <section key={section.key} aria-labelledby={`today-${section.key}`}>
+              <h3 id={`today-${section.key}`} className="text-sm font-medium text-muted-foreground">
+                {section.label} <span className="tabular-nums">· {sectionTotal.get(section.key)}</span>
+              </h3>
+              <ul className="mt-1 divide-y rounded-xl border bg-card">
+                {section.entries.map((entry) => (
+                  <li key={entry.id} className="flex flex-wrap items-center justify-between gap-2 px-3 py-2">
+                    {entry.codeBlock ? (
+                      <pre className="min-w-0 flex-1 whitespace-pre-wrap break-words rounded-md bg-muted px-2 py-1 font-mono text-sm">
+                        <code>{entry.text}</code>
+                      </pre>
+                    ) : (
+                      <span className="min-w-0 flex-1 break-words text-base">{entry.text}</span>
+                    )}
+                    {!entry.type || retypingId === entry.id ? (
+                      typeRow(entry)
+                    ) : (
+                      <span className="flex flex-wrap items-center gap-1">
+                        <span className="text-sm text-muted-foreground">{statusLabel(entry)}</span>
+                        {entry.type === 'note' && (
+                          <>
+                            {entry.mirroredTo && (
+                              <span className="text-sm text-muted-foreground">
+                                · mirrored to {entry.mirroredTo.name}
+                              </span>
+                            )}
+                            <Button
+                              variant="ghost"
+                              size="xs"
+                              aria-label={`${entry.mirroredTo ? 'Move' : 'File'} note: ${entry.text}`}
+                              onClick={() => setFilingId(entry.id)}
+                            >
+                              {entry.mirroredTo ? 'Move…' : 'File…'}
+                            </Button>
+                          </>
+                        )}
+                        {canChangeType(entry) && (
+                          <Button
+                            variant="ghost"
+                            size="xs"
+                            id={`change-${entry.id}`}
+                            aria-label={`Change type: ${entry.text}`}
+                            onClick={() => {
+                              setRetypingId(entry.id)
+                              setFocusId(`type-${entry.id}-${entry.type}`)
+                            }}
+                          >
+                            Change
+                          </Button>
+                        )}
+                      </span>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </section>
           ))}
-        </ul>
+        </div>
       )}
 
       {entries.length > VISIBLE_LIMIT && (

@@ -1,5 +1,6 @@
 import type { BaseEntity } from '@/shared/types'
 import type { Destination } from '@/modules/note-filing/types/destination'
+import type { GroupType } from '../lib/groups'
 
 /** `archive`: kept for now, to be removed in bulk later (Connection → Archive → Delete all archived). */
 export type EntryType = 'task' | 'note' | 'event' | 'archive'
@@ -22,6 +23,11 @@ export interface Entry extends BaseEntity {
   date: string
   /** `null` = untyped */
   type: EntryType | null
+  /**
+   * The group bullet of its day it sits under (`Tasks`, `Events`, `Notes`). An untagged entry in
+   * a group gets that group's tag in a review.
+   */
+  group?: GroupType
   /** Only set for tasks */
   outcome: TaskOutcome | null
   /** Completed in WorkFlowy. Tasks that are done/migrated/irrelevant are completed; an untyped entry can be too. */

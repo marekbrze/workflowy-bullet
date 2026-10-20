@@ -1,8 +1,9 @@
 import { generateId } from '@/shared/types'
-import type { Entry } from '@/modules/review-session/types/entry'
+import type { Entry, EntryType } from '@/modules/review-session/types/entry'
+import { GROUP_NAMES, groupTypeFromName, isGroupType, type GroupType } from '@/modules/review-session/lib/groups'
 import { getSnapshotState } from './snapshot-state'
 import { getLiveApi } from './live'
-import { addNodesToIndex, descendantsOf, removeSubtreeFromIndex } from './tree'
+import { addNodesToIndex, descendantsOf, moveInIndex, removeSubtreeFromIndex, type TreeIndex } from './tree'
 import type { WorkflowyApi, WorkflowyNode } from './workflowy-api'
 
 /** Everything the app changes in WorkFlowy. One real implementation, one for demo data. */
@@ -29,6 +30,16 @@ export interface Backend {
   createTopLevel(name: string): Promise<string>
   /** Reverts `wrapCodeBlock`: `id` is a code block holding `code` again, `codeChildId` is gone. */
   unwrapCodeBlock(id: string, code: string, codeChildId: string): Promise<void>
+  /**
+   * Puts a calendar day's entry under the bullet grouping `type` in that day (`Tasks`, `Events`,
+   * `Notes`), made if missing. Returns the parent it was moved from, or `null` when it stays: not a
+   * day's entry (a dated bullet elsewhere), already there, or an archive item.
+   */
+  moveToGroup(id: string, type: EntryType): Promise<string | null>
+  /** Moves a bullet to the end of `parentId`. */
+  move(id: string, parentId: string): Promise<void>
+  /** The bullet grouping `type` in day `date` (`YYYY-MM-DD`), made if missing. Returns its id. */
+  groupOf(date: string, type: GroupType): Promise<string>
 }
 
 /** Demo data is never written anywhere. */
@@ -43,6 +54,9 @@ export const demoBackend: Backend = {
   wrapCodeBlock: async () => generateId(),
   createTopLevel: async () => generateId(),
   unwrapCodeBlock: async () => {},
+  moveToGroup: async () => null,
+  move: async () => {},
+  groupOf: async (date) => date,
 }
 
 /** Past this many bullets a copy would take too many requests; better to say so than to stall. */
@@ -56,6 +70,28 @@ export class CopyTooLargeError extends Error {
 }
 
 export function createLiveBackend(api: WorkflowyApi): Backend {
+  const findOrCreateGroup = async (index: TreeIndex | null, dayId: string, type: GroupType) => {
+    const children = index?.children.get(dayId) ?? (await api.listChildren(dayId))
+    const existing = children.find((child) => groupTypeFromName(child.name) === type)
+    if (existing) return existing.id
+    const name = GROUP_NAMES[type]
+    const id = await api.createNode({ parent_id: dayId, name, position: 'bottom' })
+    if (index) {
+      const now = Math.floor(Date.now() / 1000)
+      addNodesToIndex(index, [{
+        id, parent_id: dayId, name, note: null, priority: Number.MAX_SAFE_INTEGER, completed: false,
+        createdAt: now, modifiedAt: now, completedAt: null,
+      }])
+    }
+    return id
+  }
+
+  const moveTo = async (id: string, parentId: string) => {
+    await api.moveNode(id, parentId, 'bottom')
+    const index = getSnapshotState().index
+    if (index) moveInIndex(index, id, parentId)
+  }
+
   return {
     setName: async (id, name) => {
       await api.updateNode(id, { name })
@@ -171,6 +207,42 @@ export function createLiveBackend(api: WorkflowyApi): Backend {
       const node = index.byId.get(id)
       if (node) index.byId.set(id, { ...node, name: code, data: { ...node.data, layoutMode: 'code-block' } })
       removeSubtreeFromIndex(index, codeChildId)
+    },
+
+    moveToGroup: async (id, type) => {
+      if (!isGroupType(type)) return null
+      const index = getSnapshotState().index
+      const node = index?.byId.get(id)
+      if (!index || !node?.parent_id) return null
+      const parent = index.byId.get(node.parent_id)
+      // Directly in a day, or in one of the day's groups.
+      const dayId = index.dayOfNode.has(node.parent_id)
+        ? node.parent_id
+        : parent?.parent_id && index.dayOfNode.has(parent.parent_id) && groupTypeFromName(parent.name)
+          ? parent.parent_id
+          : null
+      if (!dayId) return null
+      const groupId = await findOrCreateGroup(index, dayId, type)
+      if (groupId === node.parent_id) return null
+      await moveTo(id, groupId)
+      return node.parent_id
+    },
+
+    move: moveTo,
+
+    groupOf: async (date, type) => {
+      const index = getSnapshotState().index
+      let dayId = index ? [...index.dayOfNode].find(([, day]) => day === date)?.[0] : undefined
+      if (!dayId) {
+        // WorkFlowy makes the day when it is asked for it.
+        const day = await api.getNode(date)
+        dayId = day.id
+        if (index && !index.byId.has(day.id)) {
+          addNodesToIndex(index, [day])
+          index.dayOfNode.set(day.id, date)
+        }
+      }
+      return findOrCreateGroup(index, dayId, type)
     },
   }
 }

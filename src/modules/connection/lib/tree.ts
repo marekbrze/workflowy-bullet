@@ -2,6 +2,7 @@ import type { Destination } from '@/modules/note-filing/types/destination'
 import type { Entry } from '@/modules/review-session/types/entry'
 import { needsDecision } from '@/modules/review-session/lib/session-logic'
 import { displayText, outcomeFromName, stripHtml, typeFromName } from '@/modules/review-session/lib/tags'
+import { groupTypeFromName, type GroupType } from '@/modules/review-session/lib/groups'
 import { addDays } from '@/shared/dates'
 import type { WorkflowyNode } from './workflowy-api'
 
@@ -87,6 +88,7 @@ function entryFromNode(
   date: string,
   index: TreeIndex,
   mirrors: Record<string, MirrorRecord>,
+  group?: GroupType,
 ): Entry {
   const type = typeFromName(node.name)
   const mirror = mirrors[node.id]
@@ -99,6 +101,7 @@ function entryFromNode(
     children: (index.children.get(node.id) ?? []).map((child) => stripHtml(child.name)).filter(Boolean),
     date,
     type,
+    ...(group && { group }),
     outcome: type === 'task' ? outcomeFromName(node.name, node.completed) : null,
     completed: node.completed,
     mirroredTo: mirror?.destination ?? null,
@@ -130,7 +133,15 @@ export function deriveEntries(
 
   for (const [dayNodeId, date] of index.dayOfNode) {
     for (const child of index.children.get(dayNodeId) ?? []) {
-      add(entryFromNode(child, date, index, mirrors))
+      // A group bullet (`Tasks`, `Events`, `Notes`) is not an entry: its children are.
+      const group = groupTypeFromName(child.name)
+      if (group) {
+        for (const grouped of index.children.get(child.id) ?? []) {
+          add(entryFromNode(grouped, date, index, mirrors, group))
+        }
+      } else {
+        add(entryFromNode(child, date, index, mirrors))
+      }
     }
   }
   // Dated bullets anywhere else.
@@ -187,6 +198,21 @@ export function addNodesToIndex(index: TreeIndex, nodes: WorkflowyNode[]): void 
     if (siblings) siblings.push(node)
     else index.children.set(key, [node])
   }
+}
+
+/** Puts a bullet at the end of `parentId` in the in-memory tree (after it was moved in WorkFlowy). */
+export function moveInIndex(index: TreeIndex, id: string, parentId: string): void {
+  const node = index.byId.get(id)
+  if (!node) return
+  const old = index.children.get(node.parent_id ?? 'ROOT')
+  if (old) {
+    const at = old.findIndex((s) => s.id === id)
+    if (at >= 0) old.splice(at, 1)
+  }
+  const siblings = index.children.get(parentId) ?? []
+  const moved = { ...node, parent_id: parentId, priority: (siblings.at(-1)?.priority ?? 0) + 1 }
+  index.byId.set(id, moved)
+  index.children.set(parentId, [...siblings, moved])
 }
 
 /** Forgets a bullet and everything under it (after it was deleted in WorkFlowy). */

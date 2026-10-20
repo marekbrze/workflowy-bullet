@@ -115,6 +115,12 @@ export function createApi(config: ApiConfig, fetchImpl: Fetch = (...args) => fet
     ) => (await request<{ item_id: string }>('POST', '/nodes', { body: input, signal })).item_id,
     updateNode: (id: string, input: { name?: string; note?: string; layoutMode?: string }, signal?: AbortSignal) =>
       request<{ status: string }>('POST', `/nodes/${encodeURIComponent(id)}`, { body: input, signal }),
+    /** Moves a bullet under `parentId` (a node id or a target such as "today"). */
+    moveNode: (id: string, parentId: string, position: 'top' | 'bottom' = 'bottom', signal?: AbortSignal) =>
+      request<{ status: string }>('POST', `/nodes/${encodeURIComponent(id)}/move`, {
+        body: { parent_id: parentId, position },
+        signal,
+      }),
     deleteNode: (id: string, signal?: AbortSignal) =>
       request<{ status: string }>('DELETE', `/nodes/${encodeURIComponent(id)}`, { signal }),
     completeNode: (id: string, signal?: AbortSignal) =>

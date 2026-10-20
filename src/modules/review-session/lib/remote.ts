@@ -17,7 +17,16 @@ export interface RemoteResult {
   codeChildId?: string
   /** The place a note was filed under when it had to be created first */
   createdDestination?: Destination
+  /** Where a typed entry was moved from when it went under its type's group */
+  movedFromId?: string
 }
+
+/**
+ * Grouping is tidying, not the decision itself: the tag is already written, so a failed move
+ * must not fail (and, on retry, repeat) the decision.
+ */
+const moveToGroup = (backend: Backend, id: string, type: EntryType) =>
+  backend.moveToGroup(id, type).catch(() => null)
 
 /**
  * What each decision does in WorkFlowy. The pure logic in `session-logic.ts` decides what the
@@ -36,10 +45,13 @@ export async function remoteClassify(
   if (before.codeBlock) {
     if (!wrapperName?.trim()) throw new Error('A code block needs a name before it can be typed.')
     const name = setTypeTag(escapeHtml(wrapperName.trim()), type)
-    return { codeChildId: await backend.wrapCodeBlock(before.id, before.name, name) }
+    const codeChildId = await backend.wrapCodeBlock(before.id, before.name, name)
+    const movedFromId = await moveToGroup(backend, before.id, type)
+    return { codeChildId, ...(movedFromId && { movedFromId }) }
   }
   await backend.setName(before.id, setTypeTag(before.name, type))
-  return {}
+  const movedFromId = await moveToGroup(backend, before.id, type)
+  return movedFromId ? { movedFromId } : {}
 }
 
 export async function remoteTask(
@@ -49,6 +61,9 @@ export async function remoteTask(
   mode: ReviewMode,
   today: string,
 ): Promise<RemoteResult> {
+  // A task typed before days had groups (or by hand in WorkFlowy) joins `Tasks` now. Not undone:
+  // it is where the task belongs whatever is decided.
+  if (before.name !== undefined) await moveToGroup(backend, before.id, 'task')
   if (kind === 'leave-open') return {}
   if (kind === 'done') {
     await backend.complete(before.id)
@@ -60,7 +75,10 @@ export async function remoteTask(
     return {}
   }
   // Roll over: the copy comes first, so a failure can never lose the task.
-  const copyId = await backend.copyTo(before, rollOverTarget(mode, today))
+  const target = rollOverTarget(mode, today)
+  // The copy goes under the target day's `Tasks`; the day itself will do if that can't be made.
+  const parent = before.name === undefined ? target : await backend.groupOf(target, 'task').catch(() => target)
+  const copyId = await backend.copyTo(before, parent)
   try {
     if (before.name !== undefined) await backend.setName(before.id, addTag(before.name, 'migrated'))
     await backend.complete(before.id)
@@ -81,6 +99,7 @@ export async function remoteNote(
   before: Entry,
   destination: Destination | null,
 ): Promise<RemoteResult> {
+  if (before.name !== undefined) await moveToGroup(backend, before.id, 'note')
   if (!destination) return {}
   // Work on the current tree: the place may have moved or gone. Best effort; WorkFlowy limits
   // downloads to one a minute, and a failed refresh must not stop the note being filed.
@@ -122,6 +141,7 @@ export async function remoteUndo(backend: Backend, decision: Decision): Promise<
       } else {
         await restoreName()
       }
+      if (decision.movedFromId) await backend.move(before.id, decision.movedFromId)
       break
     case 'done':
       await backend.uncomplete(before.id)

@@ -34,6 +34,7 @@ import {
   remoteUndo,
   type RemoteResult,
 } from '../lib/remote'
+import { GROUP_NAMES } from '../lib/groups'
 
 const SIMULATE_FAILURE_KEY = '__simulate_write_failure__'
 const SAVE_FAILED = "Couldn't save to this browser."
@@ -204,6 +205,27 @@ export function useReviewSession(mode: ReviewMode) {
   const currentId = queue[0]
   const currentEntry = entries.find((e) => e.id === currentId) ?? null
 
+  // An untagged entry the user put under a day's group (`Tasks`, `Events`, `Notes`) is already
+  // classified: the app writes the tag as the review reaches it. It is not a decision to undo —
+  // Change type corrects it. Tried once per entry, so a failure leaves the card asking instead.
+  const autoTagged = useRef(new Set<string>())
+  const groupToTag =
+    currentEntry && currentEntry.type === null && currentEntry.group && !currentEntry.codeBlock
+      ? currentEntry
+      : null
+  useEffect(() => {
+    if (!groupToTag || pending || error || autoTagged.current.has(groupToTag.id)) return
+    autoTagged.current.add(groupToTag.id)
+    const type = groupToTag.group!
+    void act({
+      remote: (backend) => remoteClassify(backend, groupToTag, type),
+      apply: (s) => ({ ...classify(s, groupToTag.id, type, now()), decisions: s.decisions }),
+    }).then((ok) => {
+      if (ok) setNotice(`Tagged #${type}: it sits under ${GROUP_NAMES[type]}.`)
+    })
+    // `act` and `now` are recreated every render; the entry, `pending` and `error` decide.
+  }, [groupToTag, pending, error])
+
   return {
     mode,
     today,
@@ -236,6 +258,7 @@ export function useReviewSession(mode: ReviewMode) {
             wrapperName,
             codeChildId: result.codeChildId,
             keepInDay: choice === 'note-in-day',
+            movedFromId: result.movedFromId,
           }),
       })
     },
