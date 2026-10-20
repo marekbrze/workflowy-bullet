@@ -107,12 +107,16 @@ export function useDays() {
       setError(null)
       setGroupNotice(null)
       try {
-        const moved = await getBackend().groupDay(today)
-        setGroupNotice(
+        const { moved, untyped } = await getBackend().groupDay(today)
+        const done =
           moved === 0
             ? 'Today has its groups; every typed entry is already under one.'
-            : `Moved ${moved} ${moved === 1 ? 'entry' : 'entries'} under ${moved === 1 ? 'its group' : 'their groups'}.`,
-        )
+            : `Moved ${moved} ${moved === 1 ? 'entry' : 'entries'} under ${moved === 1 ? 'its group' : 'their groups'}.`
+        const left =
+          untyped === 0
+            ? ''
+            : ` ${untyped} without a type ${untyped === 1 ? 'stays' : 'stay'} in the day: type ${untyped === 1 ? 'it' : 'them'} and ${untyped === 1 ? 'it moves' : 'they move'} too.`
+        setGroupNotice(done + left)
       } catch (e) {
         // Moves done so far stay; grouping again finishes the rest.
         if (e instanceof AuthError) reportAuthFailure()
