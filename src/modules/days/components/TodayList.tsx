@@ -20,6 +20,11 @@ interface TodayListProps {
   /** The entry whose change is on its way to WorkFlowy: its row waits */
   busyId?: string | null
   onStart: () => void
+  /** Adds the day's groups in WorkFlowy and sorts typed entries into them. Absent = not offered. */
+  onGroup?: () => void
+  grouping?: boolean
+  /** What the last grouping did */
+  groupNotice?: string | null
 }
 
 /** More entries than this are tucked behind "Show all". */
@@ -54,6 +59,9 @@ export function TodayList({
   onFileNote,
   busyId = null,
   onStart,
+  onGroup,
+  grouping = false,
+  groupNotice = null,
 }: TodayListProps) {
   const [retypingId, setRetypingId] = useState<string | null>(null)
   const [filingId, setFilingId] = useState<string | null>(null)
@@ -125,16 +133,26 @@ export function TodayList({
         <h2 id="today-heading" className="text-lg font-semibold">
           Today
         </h2>
-        {canStart && (
-          <Button variant="outline" size="sm" onClick={onStart}>
-            {finished
-              ? "Finish today's review"
-              : resuming
-                ? "Continue today's review"
-                : "Start today's review"}
-          </Button>
-        )}
+        <span className="flex flex-wrap justify-end gap-2">
+          {onGroup && (
+            <Button variant="ghost" size="sm" disabled={grouping || busyId !== null} onClick={onGroup}>
+              {grouping ? 'Grouping…' : 'Add groups'}
+            </Button>
+          )}
+          {canStart && (
+            <Button variant="outline" size="sm" onClick={onStart}>
+              {finished
+                ? "Finish today's review"
+                : resuming
+                  ? "Continue today's review"
+                  : "Start today's review"}
+            </Button>
+          )}
+        </span>
       </div>
+      <p role="status" className="text-sm text-muted-foreground empty:hidden">
+        {groupNotice}
+      </p>
 
       {entries.length === 0 ? (
         <p className="mt-2 text-sm text-muted-foreground">Nothing captured today yet.</p>

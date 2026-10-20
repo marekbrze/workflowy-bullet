@@ -11,6 +11,9 @@ export const GROUP_NAMES: Record<GroupType, string> = {
   note: 'Notes',
 }
 
+/** In the order a day shows them. */
+export const GROUP_TYPES = Object.keys(GROUP_NAMES) as GroupType[]
+
 // Names typed by hand in WorkFlowy count too, in English or Polish, with or without a colon.
 const ALIASES: Record<GroupType, string[]> = {
   task: ['tasks', 'task', 'zadania'],

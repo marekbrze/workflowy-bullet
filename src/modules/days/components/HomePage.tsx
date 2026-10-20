@@ -76,6 +76,9 @@ export function HomePage() {
         onQuickType={days.quickType}
         onFileNote={days.fileNote}
         busyId={days.busyId}
+        onGroup={days.canGroup ? days.groupToday : undefined}
+        grouping={days.grouping}
+        groupNotice={days.groupNotice}
         onStart={() => start('today')}
       />
       <BacklogBlock

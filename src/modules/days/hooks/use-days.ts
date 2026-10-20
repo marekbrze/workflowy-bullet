@@ -5,6 +5,7 @@ import { useToday } from '@/shared/hooks/use-today'
 import { addDays } from '@/shared/dates'
 import { AuthError, reportAuthFailure } from '@/modules/connection/lib/auth'
 import { getBackend } from '@/modules/connection/lib/backend'
+import { isLive } from '@/modules/connection/lib/live'
 import type { Destination } from '@/modules/note-filing/types/destination'
 import { remoteClassify, remoteNote } from '@/modules/review-session/lib/remote'
 import { newEntryIds, reconcileQueue } from '@/modules/review-session/lib/session-logic'
@@ -22,6 +23,8 @@ export function useDays() {
   // A change is sent to WorkFlowy before it is kept here, so one can be in flight; its row waits.
   const [busyId, setBusyId] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [grouping, setGrouping] = useState(false)
+  const [groupNotice, setGroupNotice] = useState<string | null>(null)
   // The freshest stored entries: the tree can be refreshed while a change is on its way.
   const latest = useRef(entries)
   useEffect(() => {
@@ -91,6 +94,33 @@ export function useDays() {
         (entry) => remoteClassify(getBackend(), entry, type, wrapperName),
         (all) => quickType(all, id, type, new Date().toISOString(), wrapperName),
       ),
+    /** Only the real WorkFlowy has a day to put groups in */
+    canGroup: isLive(),
+    /** Today's groups are being made / entries moved */
+    grouping,
+    /** What the last grouping did, or `null` */
+    groupNotice,
+    /** Adds `Tasks`, `Events`, `Notes` to today in WorkFlowy and moves typed entries under them. */
+    groupToday: async (): Promise<void> => {
+      if (grouping || busyId !== null) return
+      setGrouping(true)
+      setError(null)
+      setGroupNotice(null)
+      try {
+        const moved = await getBackend().groupDay(today)
+        setGroupNotice(
+          moved === 0
+            ? 'Today has its groups; every typed entry is already under one.'
+            : `Moved ${moved} ${moved === 1 ? 'entry' : 'entries'} under ${moved === 1 ? 'its group' : 'their groups'}.`,
+        )
+      } catch (e) {
+        // Moves done so far stay; grouping again finishes the rest.
+        if (e instanceof AuthError) reportAuthFailure()
+        else setError(`Grouping stopped partway${e instanceof ApiError ? ` (${e.message})` : ''}. Try again to finish.`)
+      } finally {
+        setGrouping(false)
+      }
+    },
     /** Mirrors (or moves the mirror of) a note. Returns `false` if it could not be saved. */
     fileNote: (id: string, destination: Destination): Promise<boolean> => {
       let mirrorItemId: string | undefined

@@ -1,6 +1,7 @@
 import { generateId } from '@/shared/types'
 import type { Entry, EntryType } from '@/modules/review-session/types/entry'
-import { GROUP_NAMES, groupTypeFromName, isGroupType, type GroupType } from '@/modules/review-session/lib/groups'
+import { GROUP_NAMES, GROUP_TYPES, groupTypeFromName, isGroupType, type GroupType } from '@/modules/review-session/lib/groups'
+import { typeFromName } from '@/modules/review-session/lib/tags'
 import { getSnapshotState } from './snapshot-state'
 import { getLiveApi } from './live'
 import { addNodesToIndex, descendantsOf, moveInIndex, removeSubtreeFromIndex, type TreeIndex } from './tree'
@@ -40,6 +41,12 @@ export interface Backend {
   move(id: string, parentId: string): Promise<void>
   /** The bullet grouping `type` in day `date` (`YYYY-MM-DD`), made if missing. Returns its id. */
   groupOf(date: string, type: GroupType): Promise<string>
+  /**
+   * Gives day `date` its `Tasks`, `Events` and `Notes` (those missing are made) and moves every
+   * typed entry of that day under its group. Untyped entries stay. Returns how many were moved;
+   * safe to repeat after a failure.
+   */
+  groupDay(date: string): Promise<number>
 }
 
 /** Demo data is never written anywhere. */
@@ -57,6 +64,7 @@ export const demoBackend: Backend = {
   moveToGroup: async () => null,
   move: async () => {},
   groupOf: async (date) => date,
+  groupDay: async () => 0,
 }
 
 /** Past this many bullets a copy would take too many requests; better to say so than to stall. */
@@ -84,6 +92,18 @@ export function createLiveBackend(api: WorkflowyApi): Backend {
       }])
     }
     return id
+  }
+
+  const dayIdOf = async (index: TreeIndex | null, date: string) => {
+    const known = index ? [...index.dayOfNode].find(([, day]) => day === date)?.[0] : undefined
+    if (known) return known
+    // WorkFlowy makes the day when it is asked for it.
+    const day = await api.getNode(date)
+    if (index && !index.byId.has(day.id)) {
+      addNodesToIndex(index, [day])
+      index.dayOfNode.set(day.id, date)
+    }
+    return day.id
   }
 
   const moveTo = async (id: string, parentId: string) => {
@@ -232,17 +252,26 @@ export function createLiveBackend(api: WorkflowyApi): Backend {
 
     groupOf: async (date, type) => {
       const index = getSnapshotState().index
-      let dayId = index ? [...index.dayOfNode].find(([, day]) => day === date)?.[0] : undefined
-      if (!dayId) {
-        // WorkFlowy makes the day when it is asked for it.
-        const day = await api.getNode(date)
-        dayId = day.id
-        if (index && !index.byId.has(day.id)) {
-          addNodesToIndex(index, [day])
-          index.dayOfNode.set(day.id, date)
+      return findOrCreateGroup(index, await dayIdOf(index, date), type)
+    },
+
+    groupDay: async (date) => {
+      const index = getSnapshotState().index
+      if (!index) return 0
+      const dayId = await dayIdOf(index, date)
+      const groups = {} as Record<GroupType, string>
+      for (const type of GROUP_TYPES) groups[type] = await findOrCreateGroup(index, dayId, type)
+      // Entries directly in the day, and ones in a group that doesn't match their tag.
+      const moves: [string, string][] = []
+      for (const child of index.children.get(dayId) ?? []) {
+        const inGroup = groupTypeFromName(child.name) !== null
+        for (const node of inGroup ? (index.children.get(child.id) ?? []) : [child]) {
+          const type = typeFromName(node.name)
+          if (type && isGroupType(type) && node.parent_id !== groups[type]) moves.push([node.id, groups[type]])
         }
       }
-      return findOrCreateGroup(index, dayId, type)
+      for (const [id, groupId] of moves) await moveTo(id, groupId)
+      return moves.length
     },
   }
 }
